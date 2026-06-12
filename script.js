@@ -24,7 +24,7 @@ const dataCalendarioTexto = document.querySelector("#data-calendario");
 
 const sugestoesClientes = document.querySelector("#sugestoes-clientes");
 const historicoFinanceiro = document.querySelector("#historico-financeiro");
-
+const btnOcultarValores = document.querySelector("#btn-ocultar-valores");
 
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 30, duracao: 20 },
@@ -49,6 +49,16 @@ const procedimentos = [
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
 let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
 let idEditando = null;
+
+let valoresOcultos = false;
+
+function valorFinanceiro(valor) {
+  if (valoresOcultos) {
+    return "R$ ••••••";
+  }
+
+  return formatarMoeda(valor);
+}
 
 function formatarMoeda(valor) {
   return valor.toLocaleString("pt-BR", {
@@ -730,7 +740,7 @@ function renderizarHistoricoFinanceiro() {
       blocoDia.innerHTML = `
         <div class="historico-dia-header">
           <h3>${data.split("-").reverse().join("/")}</h3>
-          <strong>${formatarMoeda(totalDoDia)}</strong>
+          <strong>${valorFinanceiro(totalDoDia)}</strong>
         </div>
       `;
 
@@ -749,7 +759,7 @@ function renderizarHistoricoFinanceiro() {
             <small>${agendamento.horarioInicio} • ${agendamento.pagamento}</small>
           </div>
 
-          <strong>${formatarMoeda(agendamento.valorTotal)}</strong>
+          <strong>${valorFinanceiro(agendamento.valorTotal)}</strong>
         `;
 
         blocoDia.appendChild(item);
@@ -774,8 +784,8 @@ function atualizarCards() {
     .reduce((total, item) => total + item.valorTotal, 0);
 
   totalAgendamentosTexto.innerHTML = totalAgendamentos;
-  totalPrevistoTexto.innerHTML = formatarMoeda(totalPrevisto);
-  totalFinanceiroTexto.innerHTML = formatarMoeda(totalFinanceiro);
+totalPrevistoTexto.innerHTML = valorFinanceiro(totalPrevisto);
+totalFinanceiroTexto.innerHTML = valorFinanceiro(totalFinanceiro);
 }
 
 btnSalvar.addEventListener("click", salvarAgendamento);
@@ -825,3 +835,16 @@ function mostrarSecao(idSecao, botaoClicado) {
   document.querySelector(`#${idSecao}`).classList.add("active-section");
   botaoClicado.classList.add("active");
 }
+
+btnOcultarValores.addEventListener("click", () => {
+  valoresOcultos = !valoresOcultos;
+
+  if (valoresOcultos) {
+    btnOcultarValores.innerHTML = "Mostrar valores";
+  } else {
+    btnOcultarValores.innerHTML = "Ocultar valores";
+  }
+
+  atualizarCards();
+  renderizarHistoricoFinanceiro();
+});
