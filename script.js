@@ -725,3 +725,19 @@ document.addEventListener("click", (event) => {
     sugestoesClientes.style.display = "none";
   }
 });
+
+function mostrarSecao(idSecao, botaoClicado) {
+  const secoes = document.querySelectorAll(".app-section");
+  const botoes = document.querySelectorAll(".menu-btn");
+
+  secoes.forEach((secao) => {
+    secao.classList.remove("active-section");
+  });
+
+  botoes.forEach((botao) => {
+    botao.classList.remove("active");
+  });
+
+  document.querySelector(`#${idSecao}`).classList.add("active-section");
+  botaoClicado.classList.add("active");
+}

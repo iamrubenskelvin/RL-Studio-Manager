@@ -535,3 +535,38 @@ input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
   opacity: 0.6;
 }
+
+.menu-topo {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
+}
+
+.menu-btn {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: 15px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--gold));
+  color: white;
+}
+
+.app-section {
+  display: none;
+}
+
+.app-section.active-section {
+  display: block;
+}

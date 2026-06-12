@@ -11,118 +11,223 @@
 <body>
 
   <main class="app">
+
     <header class="header">
       <div>
         <p class="subtitle">Controle profissional</p>
         <h1>RL Studio Agenda</h1>
       </div>
-
     </header>
 
-    <section class="cards">
-      <div class="card">
-        <span>Agendamentos</span>
-        <strong id="total-agendamentos">0</strong>
-      </div>
+    <nav class="menu-topo">
 
-      <div class="card">
-        <span>Previsto</span>
-        <strong id="total-previsto">R$ 0,00</strong>
-      </div>
-
-      <div class="card">
-        <span>Financeiro</span>
-        <strong id="total-financeiro">R$ 0,00</strong>
-      </div>
-    </section>
-
-    <section class="form-card">
-      <h2>Novo agendamento</h2>
-
-      <div class="form-grid">
-        <div class="field">
-          <label for="cliente">Cliente</label>
-          <input id="cliente" type="text" placeholder="Nome da cliente" autocomplete="off" />
-          <div id="sugestoes-clientes" class="sugestoes-clientes"></div>
-        </div>
-
-        <div class="field">
-          <label for="telefone">Telefone</label>
-          <input id="telefone" type="text" placeholder="(11) 9 9999-9999" maxlength="16" />
-        </div>
-
-        <div class="field">
-          <label for="data">Data</label>
-          <input id="data" type="date" />
-        </div>
-
-        <div class="field">
-          <label for="horario">Horário</label>
-          <input id="horario" type="time" />
-        </div>
-
-        <div class="field">
-          <label for="pagamento">Pagamento</label>
-          <select id="pagamento">
-            <option value="Pix">Pix</option>
-            <option value="Dinheiro">Dinheiro</option>
-            <option value="Cartão">Cartão</option>
-            <option value="Outro">Outro</option>
-
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="status">Status</label>
-          <select id="status">
-            <option value="Agendado">Agendado</option>
-            <option value="Confirmado">Confirmado</option>
-            <option value="Atendido">Atendido</option>
-            <option value="Cancelado">Cancelado</option>
-            <option value="Reagendado">Reagendado</option>
-
-          </select>
-        </div>
-
-        <div class="field full">
-          <label for="observacao">Observação da cliente</label>
-          <textarea id="observacao" placeholder="Ex: alergias, preferência de horário, detalhes importantes"></textarea>
-        </div>
-      </div>
-
-      <h3>Procedimentos</h3>
-
-      <div id="procedimentos-lista" class="procedimentos"></div>
-
-      <div class="resumo">
-        <p>Tempo total: <strong id="tempo-total">0 min</strong></p>
-        <p>Valor total: <strong id="valor-total">R$ 0,00</strong></p>
-      </div>
-
-      <button id="btn-salvar" class="btn-primary" type="button">
-        Salvar agendamento
+      <button
+        class="menu-btn active"
+        onclick="mostrarSecao('agenda-section', this)"
+      >
+        Agenda
       </button>
-    </section>
 
-    <section class="calendar-card">
-  <div class="section-title">
-    <h2>Calendário do dia</h2>
-    <span id="data-calendario"></span>
-  </div>
+      <button
+        class="menu-btn"
+        onclick="mostrarSecao('calendario-section', this)"
+      >
+        Calendário
+      </button>
 
-  <div id="calendario-visual" class="calendario-visual"></div>
-</section>
+      <button
+        class="menu-btn"
+        onclick="mostrarSecao('financeiro-section', this)"
+      >
+        Financeiro
+      </button>
 
-    <section class="agenda-card">
-      <div class="section-title">
-        <h2>Agenda</h2>
-        <button id="btn-limpar" class="btn-outline" type="button">Limpar tudo</button>
-      </div>
+    </nav>
 
-      <div id="lista-agenda" class="lista-agenda"></div>
-    </section>
+    <!-- AGENDA -->
+
+    <div id="agenda-section" class="app-section active-section">
+
+      <section class="form-card">
+
+        <h2>Novo agendamento</h2>
+
+        <div class="form-grid">
+
+          <div class="field">
+            <label for="cliente">Cliente</label>
+
+            <input
+              id="cliente"
+              type="text"
+              placeholder="Nome da cliente"
+              autocomplete="off"
+            />
+
+            <div
+              id="sugestoes-clientes"
+              class="sugestoes-clientes"
+            ></div>
+          </div>
+
+          <div class="field">
+            <label for="telefone">Telefone</label>
+
+            <input
+              id="telefone"
+              type="text"
+              placeholder="(11) 9 9999-9999"
+              maxlength="16"
+            />
+          </div>
+
+          <div class="field">
+            <label for="data">Data</label>
+            <input id="data" type="date" />
+          </div>
+
+          <div class="field">
+            <label for="horario">Horário</label>
+            <input id="horario" type="time" />
+          </div>
+
+          <div class="field">
+            <label for="pagamento">Pagamento</label>
+
+            <select id="pagamento">
+              <option value="Pix">Pix</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Cartão">Cartão</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="status">Status</label>
+
+            <select id="status">
+              <option value="Agendado">Agendado</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="Atendido">Atendido</option>
+              <option value="Cancelado">Cancelado</option>
+              <option value="Reagendado">Reagendado</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="observacao">
+              Observação da cliente
+            </label>
+
+            <textarea
+              id="observacao"
+              placeholder="Ex: alergias, preferência de horário, detalhes importantes"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <h3>Procedimentos</h3>
+
+        <div
+          id="procedimentos-lista"
+          class="procedimentos"
+        ></div>
+
+        <div class="resumo">
+          <p>
+            Tempo total:
+            <strong id="tempo-total">0 min</strong>
+          </p>
+
+          <p>
+            Valor total:
+            <strong id="valor-total">R$ 0,00</strong>
+          </p>
+        </div>
+
+        <button
+          id="btn-salvar"
+          class="btn-primary"
+          type="button"
+        >
+          Salvar agendamento
+        </button>
+
+      </section>
+
+      <section class="agenda-card">
+
+        <div class="section-title">
+          <h2>Agenda</h2>
+
+          <button
+            id="btn-limpar"
+            class="btn-outline"
+            type="button"
+          >
+            Limpar tudo
+          </button>
+        </div>
+
+        <div
+          id="lista-agenda"
+          class="lista-agenda"
+        ></div>
+
+      </section>
+
+    </div>
+
+    <!-- CALENDÁRIO -->
+
+    <div id="calendario-section" class="app-section">
+
+      <section class="calendar-card">
+
+        <div class="section-title">
+          <h2>Calendário do dia</h2>
+
+          <span id="data-calendario"></span>
+        </div>
+
+        <div
+          id="calendario-visual"
+          class="calendario-visual"
+        ></div>
+
+      </section>
+
+    </div>
+
+    <!-- FINANCEIRO -->
+
+    <div id="financeiro-section" class="app-section">
+
+      <section class="cards">
+
+        <div class="card">
+          <span>Agendamentos</span>
+          <strong id="total-agendamentos">0</strong>
+        </div>
+
+        <div class="card">
+          <span>Previsto</span>
+          <strong id="total-previsto">R$ 0,00</strong>
+        </div>
+
+        <div class="card">
+          <span>Financeiro</span>
+          <strong id="total-financeiro">R$ 0,00</strong>
+        </div>
+
+      </section>
+
+    </div>
+
   </main>
 
   <script src="./script.js"></script>
+
 </body>
 </html>
