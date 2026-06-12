@@ -570,3 +570,83 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .app-section.active-section {
   display: block;
 }
+
+.financeiro-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.06);
+  margin-top: 20px;
+}
+
+.historico-financeiro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historico-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.historico-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.historico-item strong {
+  color: var(--title);
+}
+
+.historico-item span {
+  font-size: 14px;
+}
+
+.historico-item small {
+  color: #888;
+}
+
+@media (max-width: 700px) {
+  .historico-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.historico-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 14px;
+}
+
+.historico-dia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #fff7f8, #fffdf4);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.historico-dia-header h3 {
+  margin: 0;
+  color: var(--title);
+}
+
+.historico-dia-header strong {
+  color: var(--primary);
+}

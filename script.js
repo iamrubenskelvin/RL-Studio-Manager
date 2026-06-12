@@ -23,6 +23,8 @@ const calendarioVisual = document.querySelector("#calendario-visual");
 const dataCalendarioTexto = document.querySelector("#data-calendario");
 
 const sugestoesClientes = document.querySelector("#sugestoes-clientes");
+const historicoFinanceiro = document.querySelector("#historico-financeiro");
+
 
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 35, duracao: 30 },
@@ -604,7 +606,6 @@ function renderizarAgenda() {
 
     atualizarCards();
     renderizarCalendarioVisual();
-
     return;
   }
 
@@ -671,8 +672,82 @@ function renderizarAgenda() {
     listaAgenda.appendChild(card);
   });
 
-  atualizarCards();
-  renderizarCalendarioVisual();
+ atualizarCards();
+renderizarCalendarioVisual();
+renderizarHistoricoFinanceiro();
+}
+
+function renderizarHistoricoFinanceiro() {
+  historicoFinanceiro.innerHTML = "";
+
+  const atendidos = agendamentos
+    .filter((agendamento) => agendamento.status === "Atendido")
+    .sort((a, b) => {
+      return new Date(`${b.data}T${b.horarioInicio}`) -
+             new Date(`${a.data}T${a.horarioInicio}`);
+    });
+
+  if (atendidos.length === 0) {
+    historicoFinanceiro.innerHTML = `
+      <div class="vazio">
+        Nenhum procedimento concluído ainda.
+      </div>
+    `;
+    return;
+  }
+
+  const gruposPorDia = {};
+
+  atendidos.forEach((agendamento) => {
+    if (!gruposPorDia[agendamento.data]) {
+      gruposPorDia[agendamento.data] = [];
+    }
+
+    gruposPorDia[agendamento.data].push(agendamento);
+  });
+
+  Object.keys(gruposPorDia)
+    .sort((a, b) => new Date(b) - new Date(a))
+    .forEach((data) => {
+      const grupo = gruposPorDia[data];
+
+      const totalDoDia = grupo.reduce((total, agendamento) => {
+        return total + agendamento.valorTotal;
+      }, 0);
+
+      const blocoDia = document.createElement("div");
+      blocoDia.classList.add("historico-dia");
+
+      blocoDia.innerHTML = `
+        <div class="historico-dia-header">
+          <h3>${data.split("-").reverse().join("/")}</h3>
+          <strong>${formatarMoeda(totalDoDia)}</strong>
+        </div>
+      `;
+
+      grupo.forEach((agendamento) => {
+        const procedimentosTexto = agendamento.procedimentos
+          .map((procedimento) => procedimento.nome)
+          .join(" + ");
+
+        const item = document.createElement("div");
+        item.classList.add("historico-item");
+
+        item.innerHTML = `
+          <div>
+            <strong>${agendamento.cliente}</strong>
+            <span>${procedimentosTexto}</span>
+            <small>${agendamento.horarioInicio} • ${agendamento.pagamento}</small>
+          </div>
+
+          <strong>${formatarMoeda(agendamento.valorTotal)}</strong>
+        `;
+
+        blocoDia.appendChild(item);
+      });
+
+      historicoFinanceiro.appendChild(blocoDia);
+    });
 }
 
 function atualizarCards() {
