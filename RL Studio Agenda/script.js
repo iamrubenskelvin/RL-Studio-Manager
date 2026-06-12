@@ -646,10 +646,13 @@ function renderizarAgenda() {
 function atualizarCards() {
   const totalAgendamentos = agendamentos.length;
 
-  const totalPrevisto = agendamentos
-    .filter((item) => item.status !== "Cancelado")
-    .reduce((total, item) => total + item.valorTotal, 0);
 
+  const totalPrevisto = agendamentos
+  .filter((item) => {
+    return item.status !== "Cancelado" && item.status !== "Atendido";
+  })
+  .reduce((total, item) => total + item.valorTotal, 0);
+  
   const totalFinanceiro = agendamentos
     .filter((item) => item.status === "Atendido")
     .reduce((total, item) => total + item.valorTotal, 0);
