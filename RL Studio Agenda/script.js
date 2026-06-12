@@ -19,6 +19,8 @@ const totalAgendamentosTexto = document.querySelector("#total-agendamentos");
 const totalPrevistoTexto = document.querySelector("#total-previsto");
 const totalFinanceiroTexto = document.querySelector("#total-financeiro");
 
+const calendarioVisual = document.querySelector("#calendario-visual");
+const dataCalendarioTexto = document.querySelector("#data-calendario");
 
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 35, duracao: 30 },
@@ -456,6 +458,74 @@ function editarAgendamento(id) {
   });
 }
 
+function renderizarCalendarioVisual() {
+  calendarioVisual.innerHTML = "";
+
+  const dataSelecionada = dataInput.value;
+
+  if (!dataSelecionada) {
+    calendarioVisual.innerHTML = `
+      <div class="vazio">
+        Selecione uma data para visualizar o calendário.
+      </div>
+    `;
+    return;
+  }
+
+  dataCalendarioTexto.innerHTML = dataSelecionada.split("-").reverse().join("/");
+
+  const horarios = [];
+
+  for (let hora = 8; hora <= 20; hora++) {
+    horarios.push(`${String(hora).padStart(2, "0")}:00`);
+  }
+
+  const agendamentosDoDia = agendamentos.filter((agendamento) => {
+    return agendamento.data === dataSelecionada && agendamento.status !== "Cancelado";
+  });
+
+  horarios.forEach((horario) => {
+    const horarioMin = converterHorarioParaMinutos(horario);
+
+    const agendamentoEncontrado = agendamentosDoDia.find((agendamento) => {
+      const inicio = converterHorarioParaMinutos(agendamento.horarioInicio);
+      const fim = converterHorarioParaMinutos(agendamento.horarioFim);
+
+      return horarioMin >= inicio && horarioMin < fim;
+    });
+
+    const linha = document.createElement("div");
+    linha.classList.add("horario-linha");
+
+    if (agendamentoEncontrado) {
+      const procedimentosTexto = agendamentoEncontrado.procedimentos
+        .map((procedimento) => procedimento.nome)
+        .join(" + ");
+
+      linha.innerHTML = `
+        <div class="horario">${horario}</div>
+
+        <div class="slot ocupado">
+          <strong>${agendamentoEncontrado.cliente}</strong>
+          <span>${agendamentoEncontrado.horarioInicio} às ${agendamentoEncontrado.horarioFim}</span>
+          <span>${procedimentosTexto}</span>
+          <span>${formatarMoeda(agendamentoEncontrado.valorTotal)}</span>
+        </div>
+      `;
+    } else {
+      linha.innerHTML = `
+        <div class="horario">${horario}</div>
+
+        <div class="slot livre">
+          Horário livre
+        </div>
+      `;
+    }
+
+    calendarioVisual.appendChild(linha);
+  });
+}
+
 
 function renderizarAgenda() {
   listaAgenda.innerHTML = "";
@@ -468,6 +538,8 @@ function renderizarAgenda() {
     `;
 
     atualizarCards();
+    renderizarCalendarioVisual();
+
     return;
   }
 
@@ -570,4 +642,11 @@ btnLimpar.addEventListener("click", () => {
 renderizarProcedimentos();
 colocarDataDeHoje();
 renderizarAgenda();
+renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
+
+
+
+dataInput.addEventListener("change", renderizarCalendarioVisual);
+
+

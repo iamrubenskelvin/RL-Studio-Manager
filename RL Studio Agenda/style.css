@@ -397,3 +397,76 @@ textarea:focus {
   background: #fff7df;
   color: #9b7a14;
 }
+
+.calendar-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+}
+
+#data-calendario {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.calendario-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.horario-linha {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.horario {
+  font-weight: 700;
+  color: var(--primary);
+  padding-top: 14px;
+}
+
+.slot {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  background: #fafafa;
+  min-height: 58px;
+}
+
+.slot.livre {
+  color: #999;
+}
+
+.slot.ocupado {
+  background: linear-gradient(135deg, #fff7f8, #fffdf4);
+  border-color: var(--primary);
+}
+
+.slot strong {
+  display: block;
+  color: var(--title);
+  margin-bottom: 4px;
+}
+
+.slot span {
+  display: block;
+  font-size: 14px;
+  margin-top: 3px;
+}
+
+@media (max-width: 700px) {
+  .horario-linha {
+    grid-template-columns: 65px 1fr;
+  }
+
+  .horario {
+    font-size: 14px;
+  }
+}
