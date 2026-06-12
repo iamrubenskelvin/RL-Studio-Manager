@@ -27,14 +27,23 @@ const historicoFinanceiro = document.querySelector("#historico-financeiro");
 
 
 const procedimentos = [
-  { nome: "Design de sobrancelha", valor: 35, duracao: 30 },
-  { nome: "Design com henna", valor: 45, duracao: 45 },
-  { nome: "Brow Lamination", valor: 80, duracao: 45 },
-  { nome: "Lash Lifting", valor: 100, duracao: 60 },
-  { nome: "Extensão de cílios", valor: 120, duracao: 120 },
-  { nome: "Manutenção de cílios", valor: 80, duracao: 60 },
-  { nome: "Axila", valor: 25, duracao: 15 },
-  { nome: "Buço", valor: 15, duracao: 15 },
+  { nome: "Design de sobrancelha", valor: 30, duracao: 20 },
+  { nome: "Design com henna", valor: 40, duracao: 30 },
+  { nome: "Volume Brasileiro", valor: 105, duracao: 150 },
+  { nome: "Manutenção Volume Brasileiro", valor: 90, duracao: 120 },
+  { nome: "Extensão de cílios Fox", valor: 140, duracao: 150 },
+  { nome: "Manutenção de cílios Fox", valor: 100, duracao: 120 },
+  { nome: "Extensão de cílios Sirena", valor: 120, duracao: 150 },
+  { nome: "Manutenção de cílios Sirena", valor: 90, duracao: 120 },
+  { nome: "Extensão de cílios Luxo", valor: 130, duracao: 150 },
+  { nome: "Manutenção de cílios Luxo", valor: 95, duracao: 120 },
+  { nome: "Brow Lamination", valor: 100, duracao: 60 },
+  { nome: "Depilação Axila", valor: 25, duracao: 15 },
+  { nome: "Depilação Buço", valor: 10, duracao: 10 },
+  { nome: "Depilação Queixo", valor: 7, duracao: 10 },
+  { nome: "Depilação Perna completa", valor: 65, duracao: 35 },
+  { nome: "Depilação Meia Perna", valor: 35, duracao: 20 },
+
 ];
 
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
