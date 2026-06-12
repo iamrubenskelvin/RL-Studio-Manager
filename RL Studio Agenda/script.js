@@ -48,6 +48,30 @@ function salvarClientes() {
   localStorage.setItem("rl-clientes", JSON.stringify(clientes));
 }
 
+function existeConflitoDeHorario(novaData, novoInicio, novoFim, idIgnorar = null) {
+  const novoInicioMin = converterHorarioParaMinutos(novoInicio);
+  const novoFimMin = converterHorarioParaMinutos(novoFim);
+
+  return agendamentos.some((agendamento) => {
+    if (agendamento.id === idIgnorar) {
+      return false;
+    }
+
+    if (agendamento.data !== novaData) {
+      return false;
+    }
+
+    if (agendamento.status === "Cancelado") {
+      return false;
+    }
+
+    const inicioExistente = converterHorarioParaMinutos(agendamento.horarioInicio);
+    const fimExistente = converterHorarioParaMinutos(agendamento.horarioFim);
+
+    return novoInicioMin < fimExistente && novoFimMin > inicioExistente;
+  });
+}
+
 function salvarAgendamentos() {
   localStorage.setItem("rl-agendamentos", JSON.stringify(agendamentos));
 }
@@ -237,18 +261,21 @@ function converterMinutosParaHorario(totalMinutos) {
   return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
 }
 
-function empurrarAgendamentos(data, novoInicio, duracaoNova, idIgnorar = null) {
-  let inicioNovoMin = converterHorarioParaMinutos(novoInicio);
-  let fimNovoMin = inicioNovoMin + duracaoNova;
+function empurrarAgendamentos(dataAgendamento, novoInicio, duracaoNova, idIgnorar = null) {
+
+  let fimAtual = converterHorarioParaMinutos(novoInicio) + duracaoNova;
 
   const agendamentosDoDia = agendamentos
     .filter((agendamento) => {
       return (
-        agendamento.data === data &&
+        agendamento.data === dataAgendamento &&
         agendamento.status !== "Cancelado" &&
-        agendamento.id !== idIgnorar
+        agendamento.id !== idIgnorar &&
+        converterHorarioParaMinutos(agendamento.horarioInicio) >=
+        converterHorarioParaMinutos(novoInicio)
       );
     })
+
     .sort((a, b) => {
       return (
         converterHorarioParaMinutos(a.horarioInicio) -
@@ -256,46 +283,42 @@ function empurrarAgendamentos(data, novoInicio, duracaoNova, idIgnorar = null) {
       );
     });
 
-  agendamentosDoDia.forEach((agendamento) => {
-    const inicioExistente = converterHorarioParaMinutos(agendamento.horarioInicio);
-    const fimExistente = converterHorarioParaMinutos(agendamento.horarioFim);
+  agendamentosDoDia.forEach((agendamentoEmpurrado) => {
 
-    if (inicioExistente < fimNovoMin && fimExistente > inicioNovoMin) {
-      const novaDuracao = agendamento.duracaoTotal;
+    const index = agendamentos.findIndex((item) => {
+      return item.id === agendamentoEmpurrado.id;
+    });
 
-      agendamento.horarioInicio = converterMinutosParaHorario(fimNovoMin);
-      agendamento.horarioFim = converterMinutosParaHorario(fimNovoMin + novaDuracao);
-
-      fimNovoMin = fimNovoMin + novaDuracao;
-      inicioNovoMin = fimNovoMin - novaDuracao;
+    if (index === -1) {
+      return;
     }
+
+    const inicioAtual = converterHorarioParaMinutos(
+      agendamentos[index].horarioInicio
+    );
+
+    if (inicioAtual < fimAtual) {
+
+      const duracao = agendamentos[index].duracaoTotal;
+
+      agendamentos[index].horarioInicio =
+        converterMinutosParaHorario(fimAtual);
+
+      agendamentos[index].horarioFim =
+        converterMinutosParaHorario(fimAtual + duracao);
+
+      fimAtual = fimAtual + duracao;
+
+    } else {
+
+      fimAtual = converterHorarioParaMinutos(
+        agendamentos[index].horarioFim
+      );
+
+    }
+
   });
-}
 
-
-
-function existeConflitoDeHorario(novaData, novoInicio, novoFim, idIgnorar = null) {
-  const novoInicioMin = converterHorarioParaMinutos(novoInicio);
-  const novoFimMin = converterHorarioParaMinutos(novoFim);
-
-  return agendamentos.some((agendamento) => {
-    if (agendamento.id === idIgnorar) {
-      return false;
-    }
-
-    if (agendamento.data !== novaData) {
-      return false;
-    }
-
-    if (agendamento.status === "Cancelado") {
-      return false;
-    }
-
-    const inicioExistente = converterHorarioParaMinutos(agendamento.horarioInicio);
-    const fimExistente = converterHorarioParaMinutos(agendamento.horarioFim);
-
-    return novoInicioMin < fimExistente && novoFimMin > inicioExistente;
-  });
 }
 
 function salvarAgendamento() {
@@ -321,21 +344,27 @@ function salvarAgendamento() {
 
   salvarOuAtualizarCliente(cliente, telefone, observacao);
 
-  const valorTotal = selecionados.reduce((total, item) => total + item.valor, 0);
-  const duracaoTotal = selecionados.reduce((total, item) => total + item.duracao, 0);
+  const valorTotal = selecionados.reduce(
+    (total, item) => total + item.valor,
+    0,
+  );
+  const duracaoTotal = selecionados.reduce(
+    (total, item) => total + item.duracao,
+    0,
+  );
   const horarioFim = calcularHorarioFim(horario, duracaoTotal);
 
-if (existeConflitoDeHorario(data, horario, horarioFim, idEditando)) {
-  const confirmar = confirm(
-    "Já existe um agendamento nesse horário. Deseja encaixar e empurrar os próximos horários?"
-  );
+  if (existeConflitoDeHorario(data, horario, horarioFim, idEditando)) {
+    const confirmar = confirm(
+      "Já existe um agendamento nesse horário. Deseja encaixar e empurrar os próximos horários?",
+    );
 
-  if (!confirmar) {
-    return;
+    if (!confirmar) {
+      return;
+    }
+
+    empurrarAgendamentos(data, horario, duracaoTotal, idEditando);
   }
-
-  empurrarAgendamentos(data, horario, duracaoTotal, idEditando);
-}
 
   const agendamentoAtualizado = {
     id: idEditando || Date.now(),
@@ -349,7 +378,7 @@ if (existeConflitoDeHorario(data, horario, horarioFim, idEditando)) {
     duracaoTotal,
     pagamento,
     status,
-    observacao
+    observacao,
   };
 
   if (idEditando) {
@@ -454,7 +483,7 @@ function editarAgendamento(id) {
 
   window.scrollTo({
     top: 0,
-    behavior: "smooth"
+    behavior: "smooth",
   });
 }
 
@@ -472,7 +501,10 @@ function renderizarCalendarioVisual() {
     return;
   }
 
-  dataCalendarioTexto.innerHTML = dataSelecionada.split("-").reverse().join("/");
+  dataCalendarioTexto.innerHTML = dataSelecionada
+    .split("-")
+    .reverse()
+    .join("/");
 
   const horarios = [];
 
@@ -481,7 +513,9 @@ function renderizarCalendarioVisual() {
   }
 
   const agendamentosDoDia = agendamentos.filter((agendamento) => {
-    return agendamento.data === dataSelecionada && agendamento.status !== "Cancelado";
+    return (
+      agendamento.data === dataSelecionada && agendamento.status !== "Cancelado"
+    );
   });
 
   horarios.forEach((horario) => {
@@ -525,7 +559,6 @@ function renderizarCalendarioVisual() {
     calendarioVisual.appendChild(linha);
   });
 }
-
 
 function renderizarAgenda() {
   listaAgenda.innerHTML = "";
@@ -607,6 +640,7 @@ function renderizarAgenda() {
   });
 
   atualizarCards();
+  renderizarCalendarioVisual();
 }
 
 function atualizarCards() {
@@ -645,8 +679,4 @@ renderizarAgenda();
 renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
 
-
-
 dataInput.addEventListener("change", renderizarCalendarioVisual);
-
-
