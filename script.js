@@ -26,6 +26,10 @@ const sugestoesClientes = document.querySelector("#sugestoes-clientes");
 const historicoFinanceiro = document.querySelector("#historico-financeiro");
 const btnOcultarValores = document.querySelector("#btn-ocultar-valores");
 
+const financeiroHojeTexto = document.querySelector("#financeiro-hoje");
+const financeiroSemanaTexto = document.querySelector("#financeiro-semana");
+const financeiroMesTexto = document.querySelector("#financeiro-mes");
+
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 30, duracao: 20 },
   { nome: "Design com henna", valor: 40, duracao: 30 },
@@ -691,9 +695,10 @@ function renderizarAgenda() {
     listaAgenda.appendChild(card);
   });
 
- atualizarCards();
+atualizarCards();
 renderizarCalendarioVisual();
 renderizarHistoricoFinanceiro();
+atualizarResumoFinanceiro();
 }
 
 function renderizarHistoricoFinanceiro() {
@@ -767,6 +772,43 @@ function renderizarHistoricoFinanceiro() {
 
       historicoFinanceiro.appendChild(blocoDia);
     });
+}
+
+function atualizarResumoFinanceiro() {
+  const hoje = new Date();
+
+  const hojeFormatado = hoje.toISOString().split("T")[0];
+
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+
+  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+  const atendidos = agendamentos.filter((agendamento) => {
+    return agendamento.status === "Atendido";
+  });
+
+  const totalHoje = atendidos
+    .filter((agendamento) => agendamento.data === hojeFormatado)
+    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
+
+  const totalSemana = atendidos
+    .filter((agendamento) => {
+      const dataAgendamento = new Date(`${agendamento.data}T00:00:00`);
+      return dataAgendamento >= inicioSemana && dataAgendamento <= hoje;
+    })
+    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
+
+  const totalMes = atendidos
+    .filter((agendamento) => {
+      const dataAgendamento = new Date(`${agendamento.data}T00:00:00`);
+      return dataAgendamento >= inicioMes && dataAgendamento <= hoje;
+    })
+    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
+
+  financeiroHojeTexto.innerHTML = valorFinanceiro(totalHoje);
+  financeiroSemanaTexto.innerHTML = valorFinanceiro(totalSemana);
+  financeiroMesTexto.innerHTML = valorFinanceiro(totalMes);
 }
 
 function atualizarCards() {
@@ -847,4 +889,5 @@ btnOcultarValores.addEventListener("click", () => {
 
   atualizarCards();
   renderizarHistoricoFinanceiro();
+  atualizarResumoFinanceiro();
 });
