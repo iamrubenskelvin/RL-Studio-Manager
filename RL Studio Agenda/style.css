@@ -470,3 +470,46 @@ textarea:focus {
     font-size: 14px;
   }
 }
+
+.field {
+  position: relative;
+}
+
+.sugestoes-clientes {
+  display: none;
+  position: absolute;
+  top: 78px;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.sugestao-cliente {
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.sugestao-cliente:last-child {
+  border-bottom: none;
+}
+
+.sugestao-cliente:hover {
+  background: #fff7f8;
+}
+
+.sugestao-cliente strong {
+  display: block;
+  color: var(--title);
+  margin-bottom: 3px;
+}
+
+.sugestao-cliente span {
+  font-size: 13px;
+  color: var(--text);
+}

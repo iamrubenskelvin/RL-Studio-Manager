@@ -22,6 +22,8 @@ const totalFinanceiroTexto = document.querySelector("#total-financeiro");
 const calendarioVisual = document.querySelector("#calendario-visual");
 const dataCalendarioTexto = document.querySelector("#data-calendario");
 
+const sugestoesClientes = document.querySelector("#sugestoes-clientes");
+
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 35, duracao: 30 },
   { nome: "Design com henna", valor: 45, duracao: 45 },
@@ -111,16 +113,46 @@ telefoneInput.addEventListener("input", () => {
 });
 
 clienteInput.addEventListener("input", () => {
-  const nomeDigitado = clienteInput.value.trim().toLowerCase();
+  const texto = clienteInput.value.trim().toLowerCase();
 
-  const clienteEncontrada = clientes.find((cliente) => {
-    return cliente.nome.toLowerCase() === nomeDigitado;
+  sugestoesClientes.innerHTML = "";
+
+  if (texto.length < 2) {
+    sugestoesClientes.style.display = "none";
+    return;
+  }
+
+  const resultados = clientes.filter((cliente) => {
+    return cliente.nome.toLowerCase().includes(texto);
   });
 
-  if (clienteEncontrada) {
-    telefoneInput.value = clienteEncontrada.telefone;
-    observacaoInput.value = clienteEncontrada.observacao || "";
+  if (resultados.length === 0) {
+    sugestoesClientes.style.display = "none";
+    return;
   }
+
+  resultados.forEach((cliente) => {
+    const item = document.createElement("div");
+    item.classList.add("sugestao-cliente");
+
+    item.innerHTML = `
+      <strong>${cliente.nome}</strong>
+      <span>${cliente.telefone}</span>
+    `;
+
+    item.addEventListener("click", () => {
+      clienteInput.value = cliente.nome;
+      telefoneInput.value = cliente.telefone;
+      observacaoInput.value = cliente.observacao || "";
+
+      sugestoesClientes.innerHTML = "";
+      sugestoesClientes.style.display = "none";
+    });
+
+    sugestoesClientes.appendChild(item);
+  });
+
+  sugestoesClientes.style.display = "block";
 });
 
 function salvarOuAtualizarCliente(nome, telefone, observacao) {
@@ -683,3 +715,13 @@ renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
 
 dataInput.addEventListener("change", renderizarCalendarioVisual);
+
+
+document.addEventListener("click", (event) => {
+  const clicouNoCampoCliente = clienteInput.contains(event.target);
+  const clicouNasSugestoes = sugestoesClientes.contains(event.target);
+
+  if (!clicouNoCampoCliente && !clicouNasSugestoes) {
+    sugestoesClientes.style.display = "none";
+  }
+});
