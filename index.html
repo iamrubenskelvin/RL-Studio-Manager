@@ -4,16 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>RL Studio Manager</title>
+    <title>Studio Manager</title>
 
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="app">
+  <div id="auth-container" class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">SM</div>
+
+      <h2>Studio Manager</h2>
+      <p class="auth-subtitle">Acesse sua agenda profissional</p>
+
+      <label for="auth-email">Email</label>
+      <input type="email" id="auth-email" placeholder="Digite seu e-mail" />
+
+      <label for="auth-password">Senha</label>
+
+      <div class="password-box">
+        <input type="password" id="auth-password" placeholder="Digite sua senha" />
+        <button id="btn-toggle-password" type="button">👁️</button>
+      </div>
+
+      <div class="auth-options">
+        <label class="remember">
+          <input type="checkbox" />
+          <span>Lembrar-me</span>
+        </label>
+
+        <button id="btn-forgot-password" type="button">
+          Esqueceu a senha?
+        </button>
+      </div>
+
+      <button id="btn-login" class="login-main" type="button">
+        Entrar
+      </button>
+
+      <button id="btn-google" class="google-btn" type="button">
+        <span>G</span>
+        Entrar com Google
+      </button>
+
+      <p class="signup-text">
+        Não tem uma conta?
+        <button id="btn-register" type="button">Criar conta.</button>
+      </p>
+    </div>
+
+    <div class="auth-visual">
+      <div class="auth-visual-card">
+        <span>Gestão inteligente</span>
+
+        <h3>Controle sua agenda, clientes e financeiro em um só lugar.</h3>
+
+        <p>
+          Organize atendimentos, acompanhe resultados e tenha uma visão clara do seu estúdio.
+        </p>
+      </div>
+    </div>
+  </div>
+
+    <main class="app" id="app" style="display: none">
       <header class="header">
         <div>
           <p class="subtitle">Controle profissional</p>
-          <h1>RL Studio Agenda</h1>
+          <h1>Studio Manager</h1>
         </div>
       </header>
 
@@ -140,10 +196,7 @@
             <h2>Agenda</h2>
 
             <div class="filtros-agenda">
-              <button
-                class="filtro-btn"
-                onclick="filtrarAgenda('Todos', this)"
-              >
+              <button class="filtro-btn" onclick="filtrarAgenda('Todos', this)">
                 Todos
               </button>
 

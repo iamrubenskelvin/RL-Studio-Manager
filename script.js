@@ -41,6 +41,66 @@ const financeiroHojeTexto = document.querySelector("#financeiro-hoje");
 const financeiroSemanaTexto = document.querySelector("#financeiro-semana");
 const financeiroMesTexto = document.querySelector("#financeiro-mes");
 
+const authContainer = document.querySelector("#auth-container");
+const app = document.querySelector("#app");
+const authEmail = document.querySelector("#auth-email");
+const authPassword = document.querySelector("#auth-password");
+const btnLogin = document.querySelector("#btn-login");
+const btnRegister = document.querySelector("#btn-register");
+
+let usuarioLogado = null;
+
+const btnForgotPassword = document.querySelector("#btn-forgot-password");
+const btnTogglePassword = document.querySelector("#btn-toggle-password");
+
+btnRegister.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+  const password = authPassword.value.trim();
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Conta criada com sucesso!");
+});
+
+btnLogin.addEventListener("click", async () => {
+  btnLogin.innerHTML = "Entrando...";
+  btnLogin.disabled = true;
+
+  const email = authEmail.value.trim();
+  const password = authPassword.value.trim();
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    btnLogin.innerHTML = "Entrar";
+    btnLogin.disabled = false;
+
+    alert(error.message);
+    return;
+  }
+
+  usuarioLogado = data.user;
+
+  authContainer.style.display = "none";
+  app.style.display = "block";
+
+  await carregarAgendamentosSupabase();
+
+  btnLogin.innerHTML = "Entrar";
+  btnLogin.disabled = false;
+});
+
 const procedimentos = [
   { nome: "Design de sobrancelha", valor: 30, duracao: 20 },
   { nome: "Design com henna", valor: 40, duracao: 30 },
@@ -1096,4 +1156,33 @@ btnOcultarValores.addEventListener("click", () => {
   atualizarCards();
   renderizarHistoricoFinanceiro();
   atualizarResumoFinanceiro();
+});
+
+
+btnForgotPassword.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+
+  if (!email) {
+    alert("Digite seu e-mail para recuperar a senha.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Enviamos um link de recuperação para seu e-mail.");
+});
+
+btnTogglePassword.addEventListener("click", () => {
+  if (authPassword.type === "password") {
+    authPassword.type = "text";
+    btnTogglePassword.innerHTML = "🙈";
+  } else {
+    authPassword.type = "password";
+    btnTogglePassword.innerHTML = "👁️";
+  }
 });
