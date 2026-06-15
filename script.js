@@ -1,3 +1,14 @@
+const SUPABASE_URL = "https://ptgehrxuuwyydylkgizl.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_NILNEZZRUtdVgDLqsbwlOg_WGCBDlNy";
+
+const { createClient } = supabase;
+
+const supabaseClient = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
 const clienteInput = document.querySelector("#cliente");
 const telefoneInput = document.querySelector("#telefone");
 const dataInput = document.querySelector("#data");
@@ -47,14 +58,28 @@ const procedimentos = [
   { nome: "Depilação Queixo", valor: 7, duracao: 10 },
   { nome: "Depilação Perna completa", valor: 65, duracao: 35 },
   { nome: "Depilação Meia Perna", valor: 35, duracao: 20 },
-
 ];
 
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
 let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
 let idEditando = null;
+let filtroAtualAgenda = "Todos";
 
 let valoresOcultos = false;
+
+function filtrarAgenda(status, botaoClicado) {
+  filtroAtualAgenda = status;
+
+  const botoes = document.querySelectorAll(".filtro-btn");
+
+  botoes.forEach((botao) => {
+    botao.classList.remove("active");
+  });
+
+  botaoClicado.classList.add("active");
+
+  renderizarAgenda();
+}
 
 function valorFinanceiro(valor) {
   if (valoresOcultos) {
@@ -75,7 +100,12 @@ function salvarClientes() {
   localStorage.setItem("rl-clientes", JSON.stringify(clientes));
 }
 
-function existeConflitoDeHorario(novaData, novoInicio, novoFim, idIgnorar = null) {
+function existeConflitoDeHorario(
+  novaData,
+  novoInicio,
+  novoFim,
+  idIgnorar = null,
+) {
   const novoInicioMin = converterHorarioParaMinutos(novoInicio);
   const novoFimMin = converterHorarioParaMinutos(novoFim);
 
@@ -92,11 +122,69 @@ function existeConflitoDeHorario(novaData, novoInicio, novoFim, idIgnorar = null
       return false;
     }
 
-    const inicioExistente = converterHorarioParaMinutos(agendamento.horarioInicio);
+    const inicioExistente = converterHorarioParaMinutos(
+      agendamento.horarioInicio,
+    );
     const fimExistente = converterHorarioParaMinutos(agendamento.horarioFim);
 
     return novoInicioMin < fimExistente && novoFimMin > inicioExistente;
   });
+}
+
+async function salvarAgendamentoSupabase(agendamento) {
+  const { data, error } = await supabaseClient
+    .from("agendamentos")
+    .insert([
+      {
+        cliente: agendamento.cliente,
+        telefone: agendamento.telefone,
+        data: agendamento.data,
+        horario_inicio: agendamento.horarioInicio,
+        horario_fim: agendamento.horarioFim,
+        pagamento: agendamento.pagamento,
+        status: agendamento.status,
+        observacao: agendamento.observacao,
+        valor_total: agendamento.valorTotal,
+        tempo_total: agendamento.duracaoTotal,
+        procedimentos: agendamento.procedimentos
+      }
+    ])
+    .select();
+
+  if (error) {
+    console.error("Erro ao salvar no Supabase:", error);
+    alert("Erro ao salvar online. Veja o console.");
+    return null;
+  }
+
+  return data[0];
+}
+
+async function atualizarAgendamentoSupabase(agendamento) {
+  const { error } = await supabaseClient
+    .from("agendamentos")
+    .update({
+      cliente: agendamento.cliente,
+      telefone: agendamento.telefone,
+      data: agendamento.data,
+      horario_inicio: agendamento.horarioInicio,
+      horario_fim: agendamento.horarioFim,
+      pagamento: agendamento.pagamento,
+      status: agendamento.status,
+      observacao: agendamento.observacao,
+      valor_total: agendamento.valorTotal,
+      tempo_total: agendamento.duracaoTotal,
+      procedimentos: agendamento.procedimentos,
+    })
+    .eq("id", agendamento.id);
+
+  if (error) {
+    console.error("Erro ao atualizar:", error);
+    alert("Erro ao atualizar no Supabase.");
+    return false;
+  }
+
+  return true;
 }
 
 function salvarAgendamentos() {
@@ -318,8 +406,12 @@ function converterMinutosParaHorario(totalMinutos) {
   return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
 }
 
-function empurrarAgendamentos(dataAgendamento, novoInicio, duracaoNova, idIgnorar = null) {
-
+function empurrarAgendamentos(
+  dataAgendamento,
+  novoInicio,
+  duracaoNova,
+  idIgnorar = null,
+) {
   let fimAtual = converterHorarioParaMinutos(novoInicio) + duracaoNova;
 
   const agendamentosDoDia = agendamentos
@@ -329,7 +421,7 @@ function empurrarAgendamentos(dataAgendamento, novoInicio, duracaoNova, idIgnora
         agendamento.status !== "Cancelado" &&
         agendamento.id !== idIgnorar &&
         converterHorarioParaMinutos(agendamento.horarioInicio) >=
-        converterHorarioParaMinutos(novoInicio)
+          converterHorarioParaMinutos(novoInicio)
       );
     })
 
@@ -341,7 +433,6 @@ function empurrarAgendamentos(dataAgendamento, novoInicio, duracaoNova, idIgnora
     });
 
   agendamentosDoDia.forEach((agendamentoEmpurrado) => {
-
     const index = agendamentos.findIndex((item) => {
       return item.id === agendamentoEmpurrado.id;
     });
@@ -351,34 +442,26 @@ function empurrarAgendamentos(dataAgendamento, novoInicio, duracaoNova, idIgnora
     }
 
     const inicioAtual = converterHorarioParaMinutos(
-      agendamentos[index].horarioInicio
+      agendamentos[index].horarioInicio,
     );
 
     if (inicioAtual < fimAtual) {
-
       const duracao = agendamentos[index].duracaoTotal;
 
-      agendamentos[index].horarioInicio =
-        converterMinutosParaHorario(fimAtual);
+      agendamentos[index].horarioInicio = converterMinutosParaHorario(fimAtual);
 
-      agendamentos[index].horarioFim =
-        converterMinutosParaHorario(fimAtual + duracao);
-
-      fimAtual = fimAtual + duracao;
-
-    } else {
-
-      fimAtual = converterHorarioParaMinutos(
-        agendamentos[index].horarioFim
+      agendamentos[index].horarioFim = converterMinutosParaHorario(
+        fimAtual + duracao,
       );
 
+      fimAtual = fimAtual + duracao;
+    } else {
+      fimAtual = converterHorarioParaMinutos(agendamentos[index].horarioFim);
     }
-
   });
-
 }
 
-function salvarAgendamento() {
+async function salvarAgendamento() {
   const cliente = clienteInput.value.trim();
   const telefone = telefoneInput.value.trim();
   const data = dataInput.value;
@@ -437,6 +520,24 @@ function salvarAgendamento() {
     status,
     observacao,
   };
+
+if (idEditando) {
+  const atualizadoOnline =
+    await atualizarAgendamentoSupabase(agendamentoAtualizado);
+
+  if (!atualizadoOnline) {
+    return;
+  }
+} else {
+  const salvoOnline =
+    await salvarAgendamentoSupabase(agendamentoAtualizado);
+
+  if (!salvoOnline) {
+    return;
+  }
+
+  agendamentoAtualizado.id = salvoOnline.id;
+}
 
   if (idEditando) {
     agendamentos = agendamentos.map((agendamento) => {
@@ -563,16 +664,27 @@ function renderizarCalendarioVisual() {
     .reverse()
     .join("/");
 
-  const horarios = [];
-
-  for (let hora = 8; hora <= 20; hora++) {
-    horarios.push(`${String(hora).padStart(2, "0")}:00`);
-  }
-
   const agendamentosDoDia = agendamentos.filter((agendamento) => {
     return (
-      agendamento.data === dataSelecionada && agendamento.status !== "Cancelado"
+      agendamento.data === dataSelecionada &&
+      agendamento.status !== "Cancelado"
     );
+  });
+
+  const horarios = [];
+
+  for (let minutos = 8 * 60; minutos <= 20 * 60; minutos += 30) {
+    horarios.push(converterMinutosParaHorario(minutos));
+  }
+
+  agendamentosDoDia.forEach((agendamento) => {
+    if (!horarios.includes(agendamento.horarioInicio)) {
+      horarios.push(agendamento.horarioInicio);
+    }
+  });
+
+  horarios.sort((a, b) => {
+    return converterHorarioParaMinutos(a) - converterHorarioParaMinutos(b);
   });
 
   horarios.forEach((horario) => {
@@ -582,7 +694,14 @@ function renderizarCalendarioVisual() {
       const inicio = converterHorarioParaMinutos(agendamento.horarioInicio);
       const fim = converterHorarioParaMinutos(agendamento.horarioFim);
 
-      return horarioMin >= inicio && horarioMin < fim;
+      return horarioMin === inicio;
+    });
+
+    const ocupadoPorOutroHorario = agendamentosDoDia.find((agendamento) => {
+      const inicio = converterHorarioParaMinutos(agendamento.horarioInicio);
+      const fim = converterHorarioParaMinutos(agendamento.horarioFim);
+
+      return horarioMin > inicio && horarioMin < fim;
     });
 
     const linha = document.createElement("div");
@@ -603,6 +722,14 @@ function renderizarCalendarioVisual() {
           <span>${formatarMoeda(agendamentoEncontrado.valorTotal)}</span>
         </div>
       `;
+    } else if (ocupadoPorOutroHorario) {
+      linha.innerHTML = `
+        <div class="horario">${horario}</div>
+
+        <div class="slot em-andamento">
+          Em atendimento
+        </div>
+      `;
     } else {
       linha.innerHTML = `
         <div class="horario">${horario}</div>
@@ -615,6 +742,40 @@ function renderizarCalendarioVisual() {
 
     calendarioVisual.appendChild(linha);
   });
+}
+
+async function carregarAgendamentosSupabase() {
+  const { data, error } = await supabaseClient
+    .from("agendamentos")
+    .select("*")
+    .order("data", { ascending: true })
+    .order("horario_inicio", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar agendamentos:", error);
+    alert("Erro ao carregar dados online.");
+    return;
+  }
+
+  agendamentos = data.map((item) => {
+    return {
+      id: item.id,
+      cliente: item.cliente,
+      telefone: item.telefone,
+      data: item.data,
+      horarioInicio: item.horario_inicio,
+      horarioFim: item.horario_fim,
+      pagamento: item.pagamento,
+      status: item.status,
+      observacao: item.observacao,
+      valorTotal: Number(item.valor_total),
+      duracaoTotal: item.tempo_total,
+      procedimentos: item.procedimentos || [],
+    };
+  });
+
+  salvarAgendamentos();
+  renderizarAgenda();
 }
 
 function renderizarAgenda() {
@@ -632,12 +793,20 @@ function renderizarAgenda() {
     return;
   }
 
-  const agendamentosOrdenados = [...agendamentos].sort((a, b) => {
-    return (
-      new Date(`${a.data}T${a.horarioInicio}`) -
-      new Date(`${b.data}T${b.horarioInicio}`)
-    );
+let agendamentosFiltrados = [...agendamentos];
+
+if (filtroAtualAgenda !== "Todos") {
+  agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+    return agendamento.status === filtroAtualAgenda;
   });
+}
+
+const agendamentosOrdenados = agendamentosFiltrados.sort((a, b) => {
+  return (
+    new Date(`${a.data}T${a.horarioInicio}`) -
+    new Date(`${b.data}T${b.horarioInicio}`)
+  );
+});
 
   agendamentosOrdenados.forEach((agendamento) => {
     const procedimentosTexto = agendamento.procedimentos
@@ -695,10 +864,10 @@ function renderizarAgenda() {
     listaAgenda.appendChild(card);
   });
 
-atualizarCards();
-renderizarCalendarioVisual();
-renderizarHistoricoFinanceiro();
-atualizarResumoFinanceiro();
+  atualizarCards();
+  renderizarCalendarioVisual();
+  renderizarHistoricoFinanceiro();
+  atualizarResumoFinanceiro();
 }
 
 function renderizarHistoricoFinanceiro() {
@@ -707,8 +876,10 @@ function renderizarHistoricoFinanceiro() {
   const atendidos = agendamentos
     .filter((agendamento) => agendamento.status === "Atendido")
     .sort((a, b) => {
-      return new Date(`${b.data}T${b.horarioInicio}`) -
-             new Date(`${a.data}T${a.horarioInicio}`);
+      return (
+        new Date(`${b.data}T${b.horarioInicio}`) -
+        new Date(`${a.data}T${a.horarioInicio}`)
+      );
     });
 
   if (atendidos.length === 0) {
@@ -814,20 +985,19 @@ function atualizarResumoFinanceiro() {
 function atualizarCards() {
   const totalAgendamentos = agendamentos.length;
 
-
   const totalPrevisto = agendamentos
-  .filter((item) => {
-    return item.status !== "Cancelado" && item.status !== "Atendido";
-  })
-  .reduce((total, item) => total + item.valorTotal, 0);
-  
+    .filter((item) => {
+      return item.status !== "Cancelado" && item.status !== "Atendido";
+    })
+    .reduce((total, item) => total + item.valorTotal, 0);
+
   const totalFinanceiro = agendamentos
     .filter((item) => item.status === "Atendido")
     .reduce((total, item) => total + item.valorTotal, 0);
 
   totalAgendamentosTexto.innerHTML = totalAgendamentos;
-totalPrevistoTexto.innerHTML = valorFinanceiro(totalPrevisto);
-totalFinanceiroTexto.innerHTML = valorFinanceiro(totalFinanceiro);
+  totalPrevistoTexto.innerHTML = valorFinanceiro(totalPrevisto);
+  totalFinanceiroTexto.innerHTML = valorFinanceiro(totalFinanceiro);
 }
 
 btnSalvar.addEventListener("click", salvarAgendamento);
@@ -846,12 +1016,11 @@ btnLimpar.addEventListener("click", () => {
 
 renderizarProcedimentos();
 colocarDataDeHoje();
-renderizarAgenda();
+carregarAgendamentosSupabase();
 renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
 
 dataInput.addEventListener("change", renderizarCalendarioVisual);
-
 
 document.addEventListener("click", (event) => {
   const clicouNoCampoCliente = clienteInput.contains(event.target);

@@ -139,6 +139,36 @@
           <div class="section-title">
             <h2>Agenda</h2>
 
+            <div class="filtros-agenda">
+              <button
+                class="filtro-btn active"
+                onclick="filtrarAgenda('Todos', this)"
+              >
+                Todos
+              </button>
+
+              <button
+                class="filtro-btn"
+                onclick="filtrarAgenda('Agendado', this)"
+              >
+                Agendado
+              </button>
+
+              <button
+                class="filtro-btn"
+                onclick="filtrarAgenda('Atendido', this)"
+              >
+                Atendido
+              </button>
+
+              <button
+                class="filtro-btn"
+                onclick="filtrarAgenda('Cancelado', this)"
+              >
+                Cancelado
+              </button>
+            </div>
+
             <button id="btn-limpar" class="btn-outline" type="button">
               Limpar tudo
             </button>
@@ -215,6 +245,7 @@
       </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./script.js"></script>
   </body>
 </html>
