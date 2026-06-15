@@ -63,7 +63,7 @@ const procedimentos = [
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
 let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
 let idEditando = null;
-let filtroAtualAgenda = "Todos";
+let filtroAtualAgenda = "Agendado";
 
 let valoresOcultos = false;
 
@@ -181,6 +181,21 @@ async function atualizarAgendamentoSupabase(agendamento) {
   if (error) {
     console.error("Erro ao atualizar:", error);
     alert("Erro ao atualizar no Supabase.");
+    return false;
+  }
+
+  return true;
+}
+
+async function excluirAgendamentoSupabase(id) {
+  const { error } = await supabaseClient
+    .from("agendamentos")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao excluir:", error);
+    alert("Erro ao excluir no Supabase.");
     return false;
   }
 
@@ -559,16 +574,31 @@ if (idEditando) {
   limparFormulario();
 }
 
-function marcarComoAtendido(id) {
-  agendamentos = agendamentos.map((agendamento) => {
-    if (agendamento.id === id) {
-      return {
-        ...agendamento,
-        status: "Atendido",
-      };
+async function marcarComoAtendido(id) {
+  const agendamento = agendamentos.find((item) => item.id === id);
+
+  if (!agendamento) {
+    return;
+  }
+
+  const agendamentoAtualizado = {
+    ...agendamento,
+    status: "Atendido",
+  };
+
+  const atualizadoOnline =
+    await atualizarAgendamentoSupabase(agendamentoAtualizado);
+
+  if (!atualizadoOnline) {
+    return;
+  }
+
+  agendamentos = agendamentos.map((item) => {
+    if (item.id === id) {
+      return agendamentoAtualizado;
     }
 
-    return agendamento;
+    return item;
   });
 
   salvarAgendamentos();
@@ -591,12 +621,19 @@ function cancelarAgendamento(id) {
   renderizarAgenda();
 }
 
-function excluirAgendamento(id) {
-  const confirmar = confirm("Tem certeza que deseja excluir este agendamento?");
+async function excluirAgendamento(id) {
+    const confirmar = confirm("Tem certeza que deseja excluir este agendamento?");
 
   if (!confirmar) {
     return;
   }
+
+  const excluidoOnline =
+  await excluirAgendamentoSupabase(id);
+
+if (!excluidoOnline) {
+  return;
+}
 
   agendamentos = agendamentos.filter((agendamento) => agendamento.id !== id);
 
