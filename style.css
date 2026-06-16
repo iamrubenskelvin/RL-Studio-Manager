@@ -775,7 +775,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     ),
 
     #f9f9f9;
-}sss
+}
 
 .auth-card {
   width: 100%;
@@ -1041,4 +1041,105 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   line-height: 1.7;
 
   opacity: 0.92;
+}
+
+.perfil-card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px;
+
+  box-shadow: 0 15px 40px rgba(183, 110, 121, 0.12);
+
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.perfil-topo {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.perfil-avatar {
+  width: 72px;
+  height: 72px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    #b76e79,
+    #d89aa4
+  );
+
+  color: white;
+
+  font-size: 24px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.perfil-topo h2 {
+  color: #2f2f2f;
+  margin-bottom: 4px;
+}
+
+.perfil-topo p {
+  color: #7a7a7a;
+}
+
+.perfil-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.perfil-item {
+  background: #f9f9f9;
+
+  border: 1px solid #ececec;
+
+  border-radius: 18px;
+
+  padding: 18px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perfil-item span {
+  color: #888;
+  font-size: 14px;
+}
+
+.perfil-item strong {
+  color: #2f2f2f;
+}
+
+.btn-danger {
+  height: 52px;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #d94b4b;
+  color: white;
+
+  font-weight: 600;
+  font-size: 15px;
+
+  cursor: pointer;
+
+  transition: 0.3s ease;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+
+  background: #c93f3f;
 }

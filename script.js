@@ -4,10 +4,7 @@ const SUPABASE_KEY = "sb_publishable_NILNEZZRUtdVgDLqsbwlOg_WGCBDlNy";
 
 const { createClient } = supabase;
 
-const supabaseClient = createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const clienteInput = document.querySelector("#cliente");
 const telefoneInput = document.querySelector("#telefone");
@@ -47,17 +44,27 @@ const authEmail = document.querySelector("#auth-email");
 const authPassword = document.querySelector("#auth-password");
 const btnLogin = document.querySelector("#btn-login");
 const btnRegister = document.querySelector("#btn-register");
-
-let usuarioLogado = null;
-
+const btnGoogle = document.querySelector("#btn-google");
 const btnForgotPassword = document.querySelector("#btn-forgot-password");
 const btnTogglePassword = document.querySelector("#btn-toggle-password");
+
+let usuarioLogado = null;
+let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
+let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
+let idEditando = null;
+let filtroAtualAgenda = "Agendado";
+let valoresOcultos = false;
 
 btnRegister.addEventListener("click", async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value.trim();
 
-  const { data, error } = await supabaseClient.auth.signUp({
+  if (!email || !password) {
+    alert("Preencha e-mail e senha.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
     email,
     password,
   });
@@ -71,11 +78,16 @@ btnRegister.addEventListener("click", async () => {
 });
 
 btnLogin.addEventListener("click", async () => {
-  btnLogin.innerHTML = "Entrando...";
-  btnLogin.disabled = true;
-
   const email = authEmail.value.trim();
   const password = authPassword.value.trim();
+
+  if (!email || !password) {
+    alert("Preencha e-mail e senha.");
+    return;
+  }
+
+  btnLogin.innerHTML = "Entrando...";
+  btnLogin.disabled = true;
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email,
@@ -85,7 +97,6 @@ btnLogin.addEventListener("click", async () => {
   if (error) {
     btnLogin.innerHTML = "Entrar";
     btnLogin.disabled = false;
-
     alert(error.message);
     return;
   }
@@ -97,8 +108,48 @@ btnLogin.addEventListener("click", async () => {
 
   await carregarAgendamentosSupabase();
 
+  atualizarPerfil();
+
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
+});
+
+btnGoogle.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+  });
+
+  if (error) {
+    alert(error.message);
+  }
+});
+
+btnForgotPassword.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+
+  if (!email) {
+    alert("Digite seu e-mail para recuperar a senha.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Enviamos um link de recuperação para seu e-mail.");
+});
+
+btnTogglePassword.addEventListener("click", () => {
+  if (authPassword.type === "password") {
+    authPassword.type = "text";
+    btnTogglePassword.innerHTML = "🙈";
+  } else {
+    authPassword.type = "password";
+    btnTogglePassword.innerHTML = "👁️";
+  }
 });
 
 const procedimentos = [
@@ -119,13 +170,6 @@ const procedimentos = [
   { nome: "Depilação Perna completa", valor: 65, duracao: 35 },
   { nome: "Depilação Meia Perna", valor: 35, duracao: 20 },
 ];
-
-let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
-let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
-let idEditando = null;
-let filtroAtualAgenda = "Agendado";
-
-let valoresOcultos = false;
 
 function filtrarAgenda(status, botaoClicado) {
   filtroAtualAgenda = status;
@@ -196,6 +240,8 @@ async function salvarAgendamentoSupabase(agendamento) {
     .from("agendamentos")
     .insert([
       {
+        user_id: usuarioLogado.id,
+
         cliente: agendamento.cliente,
         telefone: agendamento.telefone,
         data: agendamento.data,
@@ -206,8 +252,8 @@ async function salvarAgendamentoSupabase(agendamento) {
         observacao: agendamento.observacao,
         valor_total: agendamento.valorTotal,
         tempo_total: agendamento.duracaoTotal,
-        procedimentos: agendamento.procedimentos
-      }
+        procedimentos: agendamento.procedimentos,
+      },
     ])
     .select();
 
@@ -267,10 +313,16 @@ function salvarAgendamentos() {
 }
 
 function colocarDataDeHoje() {
-  const hoje = new Date().toISOString().split("T")[0];
+  const hoje = new Date();
+
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+
+  const dataLocal = `${ano}-${mes}-${dia}`;
 
   if (!dataInput.value) {
-    dataInput.value = hoje;
+    dataInput.value = dataLocal;
   }
 }
 
@@ -596,23 +648,23 @@ async function salvarAgendamento() {
     observacao,
   };
 
-if (idEditando) {
-  const atualizadoOnline =
-    await atualizarAgendamentoSupabase(agendamentoAtualizado);
+  if (idEditando) {
+    const atualizadoOnline = await atualizarAgendamentoSupabase(
+      agendamentoAtualizado,
+    );
 
-  if (!atualizadoOnline) {
-    return;
+    if (!atualizadoOnline) {
+      return;
+    }
+  } else {
+    const salvoOnline = await salvarAgendamentoSupabase(agendamentoAtualizado);
+
+    if (!salvoOnline) {
+      return;
+    }
+
+    agendamentoAtualizado.id = salvoOnline.id;
   }
-} else {
-  const salvoOnline =
-    await salvarAgendamentoSupabase(agendamentoAtualizado);
-
-  if (!salvoOnline) {
-    return;
-  }
-
-  agendamentoAtualizado.id = salvoOnline.id;
-}
 
   if (idEditando) {
     agendamentos = agendamentos.map((agendamento) => {
@@ -646,8 +698,9 @@ async function marcarComoAtendido(id) {
     status: "Atendido",
   };
 
-  const atualizadoOnline =
-    await atualizarAgendamentoSupabase(agendamentoAtualizado);
+  const atualizadoOnline = await atualizarAgendamentoSupabase(
+    agendamentoAtualizado,
+  );
 
   if (!atualizadoOnline) {
     return;
@@ -665,16 +718,32 @@ async function marcarComoAtendido(id) {
   renderizarAgenda();
 }
 
-function cancelarAgendamento(id) {
-  agendamentos = agendamentos.map((agendamento) => {
-    if (agendamento.id === id) {
-      return {
-        ...agendamento,
-        status: "Cancelado",
-      };
+async function cancelarAgendamento(id) {
+  const agendamento = agendamentos.find((item) => item.id === id);
+
+  if (!agendamento) {
+    return;
+  }
+
+  const agendamentoAtualizado = {
+    ...agendamento,
+    status: "Cancelado",
+  };
+
+  const atualizadoOnline = await atualizarAgendamentoSupabase(
+    agendamentoAtualizado,
+  );
+
+  if (!atualizadoOnline) {
+    return;
+  }
+
+  agendamentos = agendamentos.map((item) => {
+    if (item.id === id) {
+      return agendamentoAtualizado;
     }
 
-    return agendamento;
+    return item;
   });
 
   salvarAgendamentos();
@@ -682,18 +751,17 @@ function cancelarAgendamento(id) {
 }
 
 async function excluirAgendamento(id) {
-    const confirmar = confirm("Tem certeza que deseja excluir este agendamento?");
+  const confirmar = confirm("Tem certeza que deseja excluir este agendamento?");
 
   if (!confirmar) {
     return;
   }
 
-  const excluidoOnline =
-  await excluirAgendamentoSupabase(id);
+  const excluidoOnline = await excluirAgendamentoSupabase(id);
 
-if (!excluidoOnline) {
-  return;
-}
+  if (!excluidoOnline) {
+    return;
+  }
 
   agendamentos = agendamentos.filter((agendamento) => agendamento.id !== id);
 
@@ -763,8 +831,7 @@ function renderizarCalendarioVisual() {
 
   const agendamentosDoDia = agendamentos.filter((agendamento) => {
     return (
-      agendamento.data === dataSelecionada &&
-      agendamento.status !== "Cancelado"
+      agendamento.data === dataSelecionada && agendamento.status !== "Cancelado"
     );
   });
 
@@ -845,6 +912,7 @@ async function carregarAgendamentosSupabase() {
   const { data, error } = await supabaseClient
     .from("agendamentos")
     .select("*")
+    .eq("user_id", usuarioLogado.id)
     .order("data", { ascending: true })
     .order("horario_inicio", { ascending: true });
 
@@ -890,20 +958,20 @@ function renderizarAgenda() {
     return;
   }
 
-let agendamentosFiltrados = [...agendamentos];
+  let agendamentosFiltrados = [...agendamentos];
 
-if (filtroAtualAgenda !== "Todos") {
-  agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
-    return agendamento.status === filtroAtualAgenda;
+  if (filtroAtualAgenda !== "Todos") {
+    agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+      return agendamento.status === filtroAtualAgenda;
+    });
+  }
+
+  const agendamentosOrdenados = agendamentosFiltrados.sort((a, b) => {
+    return (
+      new Date(`${a.data}T${a.horarioInicio}`) -
+      new Date(`${b.data}T${b.horarioInicio}`)
+    );
   });
-}
-
-const agendamentosOrdenados = agendamentosFiltrados.sort((a, b) => {
-  return (
-    new Date(`${a.data}T${a.horarioInicio}`) -
-    new Date(`${b.data}T${b.horarioInicio}`)
-  );
-});
 
   agendamentosOrdenados.forEach((agendamento) => {
     const procedimentosTexto = agendamento.procedimentos
@@ -1113,7 +1181,6 @@ btnLimpar.addEventListener("click", () => {
 
 renderizarProcedimentos();
 colocarDataDeHoje();
-carregarAgendamentosSupabase();
 renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
 
@@ -1127,22 +1194,6 @@ document.addEventListener("click", (event) => {
     sugestoesClientes.style.display = "none";
   }
 });
-
-function mostrarSecao(idSecao, botaoClicado) {
-  const secoes = document.querySelectorAll(".app-section");
-  const botoes = document.querySelectorAll(".menu-btn");
-
-  secoes.forEach((secao) => {
-    secao.classList.remove("active-section");
-  });
-
-  botoes.forEach((botao) => {
-    botao.classList.remove("active");
-  });
-
-  document.querySelector(`#${idSecao}`).classList.add("active-section");
-  botaoClicado.classList.add("active");
-}
 
 btnOcultarValores.addEventListener("click", () => {
   valoresOcultos = !valoresOcultos;
@@ -1158,31 +1209,58 @@ btnOcultarValores.addEventListener("click", () => {
   atualizarResumoFinanceiro();
 });
 
+function mostrarSecao(idSecao, botaoClicado) {
+  const secoes = document.querySelectorAll(".app-section");
 
-btnForgotPassword.addEventListener("click", async () => {
-  const email = authEmail.value.trim();
+  secoes.forEach((secao) => {
+    secao.classList.remove("active-section");
+  });
 
-  if (!email) {
-    alert("Digite seu e-mail para recuperar a senha.");
+  const secaoEscolhida = document.getElementById(idSecao);
+
+  if (secaoEscolhida) {
+    secaoEscolhida.classList.add("active-section");
+  }
+
+  const botoes = document.querySelectorAll(".menu-btn");
+
+  botoes.forEach((botao) => {
+    botao.classList.remove("active");
+  });
+
+  botaoClicado.classList.add("active");
+}
+
+async function verificarSessao() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    usuarioLogado = data.session.user;
+
+    authContainer.style.display = "none";
+    app.style.display = "block";
+
+    await carregarAgendamentosSupabase();
+
+    atualizarPerfil();
+  }
+}
+
+const perfilEmail = document.querySelector("#perfil-email");
+const btnLogout = document.querySelector("#btn-logout");
+
+async function atualizarPerfil() {
+  if (!usuarioLogado) {
     return;
   }
 
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  perfilEmail.innerHTML = usuarioLogado.email;
+}
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+btnLogout.addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
 
-  alert("Enviamos um link de recuperação para seu e-mail.");
+  location.reload();
 });
 
-btnTogglePassword.addEventListener("click", () => {
-  if (authPassword.type === "password") {
-    authPassword.type = "text";
-    btnTogglePassword.innerHTML = "🙈";
-  } else {
-    authPassword.type = "password";
-    btnTogglePassword.innerHTML = "👁️";
-  }
-});
+verificarSessao();
