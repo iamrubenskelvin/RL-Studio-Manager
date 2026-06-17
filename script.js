@@ -49,6 +49,7 @@ const totalAtendimentosFinanceiro = document.querySelector(
   "#total-atendimentos-financeiro",
 );
 const topClientes = document.querySelector("#top-clientes");
+const buscaClienteAgenda = document.querySelector("#busca-cliente-agenda");
 
 const authContainer = document.querySelector("#auth-container");
 const app = document.querySelector("#app");
@@ -1149,6 +1150,31 @@ function renderizarAgenda() {
     return dataAgendamento >= hoje;
   });
 
+  const textoBusca = buscaClienteAgenda
+    ? buscaClienteAgenda.value.trim().toLowerCase()
+    : "";
+
+  const textoBuscaNumeros = textoBusca.replace(/\D/g, "");
+
+  if (textoBusca !== "") {
+    agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+      const nomeCliente = agendamento.cliente
+        ? agendamento.cliente.toLowerCase()
+        : "";
+
+      const telefoneCliente = agendamento.telefone
+        ? agendamento.telefone.replace(/\D/g, "")
+        : "";
+
+      const encontrouNome = nomeCliente.includes(textoBusca);
+
+      const encontrouTelefone =
+        textoBuscaNumeros !== "" && telefoneCliente.includes(textoBuscaNumeros);
+
+      return encontrouNome || encontrouTelefone;
+    });
+  }
+
   if (filtroAtualAgenda !== "Todos") {
     agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
       if (filtroAtualAgenda === "Agendado") {
@@ -2098,5 +2124,9 @@ toggleNovaSenha.addEventListener("click", () => {
 toggleConfirmarSenha.addEventListener("click", () => {
   alternarVisibilidade(confirmarSenha, toggleConfirmarSenha);
 });
+
+if (buscaClienteAgenda) {
+  buscaClienteAgenda.addEventListener("input", renderizarAgenda);
+}
 
 verificarSessao();

@@ -1474,3 +1474,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 #procedimentos-section .btn-primary {
   margin-top: 12px;
 }
+
+.busca-agenda {
+  margin-bottom: 16px;
+}
+
+.busca-agenda input {
+  height: 48px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 0 16px;
+  font-size: 15px;
+  background: white;
+}
