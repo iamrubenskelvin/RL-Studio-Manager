@@ -7,6 +7,10 @@
     <title>Studio Manager</title>
 
     <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
   </head>
   <body>
     <div id="auth-container" class="auth-container">
@@ -27,7 +31,14 @@
             id="auth-password"
             placeholder="Digite sua senha"
           />
-          <button id="btn-toggle-password" type="button">👁️</button>
+
+          <button
+            id="btn-toggle-password"
+            type="button"
+            class="password-toggle"
+          >
+            <span class="material-symbols-outlined"> visibility </span>
+          </button>
         </div>
 
         <div class="auth-options">
@@ -422,6 +433,10 @@
             </div>
           </div>
 
+          <button id="btn-alterar-senha" class="btn-outline" type="button">
+            Alterar senha
+          </button>
+
           <button id="btn-logout" class="btn-danger" type="button">
             Sair da conta
           </button>
@@ -461,6 +476,81 @@
             </button>
 
             <button id="btn-salvar-modal" class="btn-primary" type="button">
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="modal-senha" class="modal-perfil oculto">
+        <div class="modal-perfil-card">
+          <h2>Alterar senha</h2>
+          <div class="field">
+            <label>Senha atual</label>
+
+            <div class="password-box">
+              <input
+                type="password"
+                id="senha-atual"
+                placeholder="Digite sua senha atual"
+              />
+
+              <button
+                type="button"
+                id="toggle-senha-atual"
+                class="password-toggle"
+              >
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Nova senha</label>
+
+            <div class="password-box">
+              <input
+                type="password"
+                id="nova-senha"
+                placeholder="Digite a nova senha"
+              />
+
+              <button
+                type="button"
+                id="toggle-nova-senha"
+                class="password-toggle"
+              >
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Confirmar senha</label>
+
+            <div class="password-box">
+              <input
+                type="password"
+                id="confirmar-senha"
+                placeholder="Confirme a nova senha"
+              />
+
+              <button
+                type="button"
+                id="toggle-confirmar-senha"
+                class="password-toggle"
+              >
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-acoes">
+            <button id="btn-cancelar-senha" class="btn-outline" type="button">
+              Cancelar
+            </button>
+
+            <button id="btn-salvar-senha" class="btn-primary" type="button">
               Salvar
             </button>
           </div>

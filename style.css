@@ -907,10 +907,37 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .password-box {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .password-box input {
-  padding-right: 55px;
+  width: 100%;
+  padding-right: 50px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #777;
+  padding: 0;
+}
+
+.password-toggle:hover {
+  color: #b76e79;
+}
+
+.password-toggle .material-symbols-outlined {
+  font-size: 22px;
 }
 
 #btn-toggle-password {
@@ -1325,4 +1352,25 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   .item-procedimento .acoes button {
     flex: 1;
   }
+}
+
+.password-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #888;
+  padding: 0 12px;
+}
+
+.password-toggle:hover {
+  color: #b76e79;
+}
+
+.password-toggle .material-symbols-outlined {
+  font-size: 22px;
 }

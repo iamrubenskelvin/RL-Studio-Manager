@@ -73,6 +73,24 @@ const btnSalvarProcedimento = document.querySelector(
 );
 const listaProcedimentos = document.querySelector("#lista-procedimentos");
 
+const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
+
+const modalSenha = document.querySelector("#modal-senha");
+
+const novaSenha = document.querySelector("#nova-senha");
+const confirmarSenha = document.querySelector("#confirmar-senha");
+
+const senhaAtual = document.querySelector("#senha-atual");
+
+const toggleSenhaAtual = document.querySelector("#toggle-senha-atual");
+
+const toggleNovaSenha = document.querySelector("#toggle-nova-senha");
+
+const toggleConfirmarSenha = document.querySelector("#toggle-confirmar-senha");
+
+const btnCancelarSenha = document.querySelector("#btn-cancelar-senha");
+const btnSalvarSenha = document.querySelector("#btn-salvar-senha");
+
 let usuarioLogado = null;
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
 let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
@@ -169,12 +187,14 @@ btnForgotPassword.addEventListener("click", async () => {
 });
 
 btnTogglePassword.addEventListener("click", () => {
+  const icone = btnTogglePassword.querySelector("span");
+
   if (authPassword.type === "password") {
     authPassword.type = "text";
-    btnTogglePassword.innerHTML = "🙈";
+    icone.textContent = "visibility_off";
   } else {
     authPassword.type = "password";
-    btnTogglePassword.innerHTML = "👁️";
+    icone.textContent = "visibility";
   }
 });
 
@@ -1284,6 +1304,66 @@ btnCancelarModal.addEventListener("click", () => {
   modalPerfil.classList.add("oculto");
 });
 
+btnAlterarSenha.addEventListener("click", () => {
+  modalSenha.classList.remove("oculto");
+
+  novaSenha.value = "";
+  confirmarSenha.value = "";
+});
+
+btnCancelarSenha.addEventListener("click", () => {
+  modalSenha.classList.add("oculto");
+});
+
+btnSalvarSenha.addEventListener("click", async () => {
+  const senhaAtualDigitada = senhaAtual.value.trim();
+  const senha = novaSenha.value.trim();
+  const confirmar = confirmarSenha.value.trim();
+
+  if (!senhaAtualDigitada) {
+    alert("Digite sua senha atual.");
+    return;
+  }
+
+  if (senha.length < 6) {
+    alert("A nova senha deve ter pelo menos 6 caracteres.");
+    return;
+  }
+
+  if (senha !== confirmar) {
+    alert("As senhas não coincidem.");
+    return;
+  }
+
+  const { error: erroSenhaAtual } = await supabaseClient.auth.signInWithPassword({
+    email: usuarioLogado.email,
+    password: senhaAtualDigitada,
+  });
+
+  if (erroSenhaAtual) {
+    alert("Senha atual incorreta.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({
+    password: senha,
+  });
+
+  if (error) {
+    console.error(error);
+    alert("Erro ao alterar senha.");
+    return;
+  }
+
+  senhaAtual.value = "";
+  novaSenha.value = "";
+  confirmarSenha.value = "";
+
+  modalSenha.classList.add("oculto");
+
+  alert("Senha alterada com sucesso!");
+});
+
 modalTelefone.addEventListener("input", () => {
   modalTelefone.value = formatarTelefonePerfil(modalTelefone.value);
 });
@@ -1631,5 +1711,29 @@ async function excluirProcedimento(id) {
 }
 
 btnSalvarProcedimento.addEventListener("click", salvarProcedimento);
+
+function alternarVisibilidade(input, botao) {
+  const icone = botao.querySelector("span");
+
+  if (input.type === "password") {
+    input.type = "text";
+    icone.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    icone.textContent = "visibility";
+  }
+}
+
+toggleSenhaAtual.addEventListener("click", () => {
+  alternarVisibilidade(senhaAtual, toggleSenhaAtual);
+});
+
+toggleNovaSenha.addEventListener("click", () => {
+  alternarVisibilidade(novaSenha, toggleNovaSenha);
+});
+
+toggleConfirmarSenha.addEventListener("click", () => {
+  alternarVisibilidade(confirmarSenha, toggleConfirmarSenha);
+});
 
 verificarSessao();
