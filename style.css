@@ -1281,3 +1281,48 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .modal-perfil.oculto {
   display: none !important;
 }
+
+.item-procedimento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.item-procedimento strong {
+  color: var(--title);
+  font-size: 17px;
+}
+
+.item-procedimento p {
+  color: var(--primary);
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.item-procedimento span {
+  color: #777;
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .item-procedimento {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .item-procedimento .acoes {
+    width: 100%;
+  }
+
+  .item-procedimento .acoes button {
+    flex: 1;
+  }
+}

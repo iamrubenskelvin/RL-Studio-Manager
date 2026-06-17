@@ -98,6 +98,13 @@
           Financeiro
         </button>
 
+        <button
+          class="menu-btn"
+          onclick="mostrarSecao('procedimentos-section', this)"
+        >
+          Procedimentos
+        </button>
+
         <button class="menu-btn" onclick="mostrarSecao('perfil-section', this)">
           Perfil
         </button>
@@ -308,6 +315,50 @@
           <div id="historico-financeiro" class="historico-financeiro"></div>
         </section>
       </div>
+
+      <!-- PROCEDIMENTOS -->
+
+      <div id="procedimentos-section" class="app-section">
+        <section class="form-card">
+          <h2>Novo Procedimento</h2>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nome</label>
+              <input
+                type="text"
+                id="procedimento-nome"
+                placeholder="Ex: Brow Lamination"
+              />
+            </div>
+
+            <div class="field">
+              <label>Valor (R$)</label>
+              <input type="number" id="procedimento-valor" placeholder="120" />
+            </div>
+
+            <div class="field">
+              <label>Duração (min)</label>
+              <input type="number" id="procedimento-duracao" placeholder="60" />
+            </div>
+          </div>
+
+          <button
+            id="btn-salvar-procedimento"
+            class="btn-primary"
+            type="button"
+          >
+            Salvar procedimento
+          </button>
+        </section>
+
+        <section class="agenda-card">
+          <h2>Procedimentos cadastrados</h2>
+
+          <div id="lista-procedimentos"></div>
+        </section>
+      </div>
+
       <!-- PERFIL -->
 
       <div id="perfil-section" class="app-section">
@@ -397,7 +448,11 @@
 
           <div class="field">
             <label for="modal-studio">Nome do Studio</label>
-            <input id="modal-studio" type="text" placeholder="Digite o nome do seu estúdio" />
+            <input
+              id="modal-studio"
+              type="text"
+              placeholder="Digite o nome do seu estúdio"
+            />
           </div>
 
           <div class="modal-acoes">

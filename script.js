@@ -65,10 +65,19 @@ const modalStudio = document.querySelector("#modal-studio");
 const btnCancelarModal = document.querySelector("#btn-cancelar-modal");
 const btnSalvarModal = document.querySelector("#btn-salvar-modal");
 
+const procedimentoNome = document.querySelector("#procedimento-nome");
+const procedimentoValor = document.querySelector("#procedimento-valor");
+const procedimentoDuracao = document.querySelector("#procedimento-duracao");
+const btnSalvarProcedimento = document.querySelector(
+  "#btn-salvar-procedimento",
+);
+const listaProcedimentos = document.querySelector("#lista-procedimentos");
+
 let usuarioLogado = null;
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
 let agendamentos = JSON.parse(localStorage.getItem("rl-agendamentos")) || [];
 let idEditando = null;
+let idProcedimentoEditando = null;
 let filtroAtualAgenda = "Agendado";
 let valoresOcultos = false;
 
@@ -169,24 +178,7 @@ btnTogglePassword.addEventListener("click", () => {
   }
 });
 
-const procedimentos = [
-  { nome: "Design de sobrancelha", valor: 30, duracao: 20 },
-  { nome: "Design com henna", valor: 40, duracao: 30 },
-  { nome: "Volume Brasileiro", valor: 105, duracao: 150 },
-  { nome: "Manutenção Volume Brasileiro", valor: 90, duracao: 120 },
-  { nome: "Extensão de cílios Fox", valor: 140, duracao: 150 },
-  { nome: "Manutenção de cílios Fox", valor: 100, duracao: 120 },
-  { nome: "Extensão de cílios Sirena", valor: 120, duracao: 150 },
-  { nome: "Manutenção de cílios Sirena", valor: 90, duracao: 120 },
-  { nome: "Extensão de cílios Luxo", valor: 130, duracao: 150 },
-  { nome: "Manutenção de cílios Luxo", valor: 95, duracao: 120 },
-  { nome: "Brow Lamination", valor: 100, duracao: 60 },
-  { nome: "Depilação Axila", valor: 25, duracao: 15 },
-  { nome: "Depilação Buço", valor: 10, duracao: 10 },
-  { nome: "Depilação Queixo", valor: 7, duracao: 10 },
-  { nome: "Depilação Perna completa", valor: 65, duracao: 35 },
-  { nome: "Depilação Meia Perna", valor: 35, duracao: 20 },
-];
+let procedimentos = [];
 
 function filtrarAgenda(status, botaoClicado) {
   filtroAtualAgenda = status;
@@ -390,8 +382,6 @@ function formatarTelefonePerfil(valor) {
 telefoneInput.addEventListener("input", () => {
   telefoneInput.value = formatarTelefone(telefoneInput.value);
 });
-
-
 
 clienteInput.addEventListener("input", () => {
   const texto = clienteInput.value.trim().toLowerCase();
@@ -1220,7 +1210,6 @@ btnLimpar.addEventListener("click", () => {
   renderizarAgenda();
 });
 
-renderizarProcedimentos();
 colocarDataDeHoje();
 renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
@@ -1274,13 +1263,19 @@ function mostrarSecao(idSecao, botaoClicado) {
 
 btnEditarPerfil.addEventListener("click", () => {
   modalNome.value =
-    perfilNomeTexto.innerHTML === "Não informado" ? "" : perfilNomeTexto.innerHTML;
+    perfilNomeTexto.innerHTML === "Não informado"
+      ? ""
+      : perfilNomeTexto.innerHTML;
 
   modalTelefone.value =
-    perfilTelefoneTexto.innerHTML === "Não informado" ? "" : perfilTelefoneTexto.innerHTML;
+    perfilTelefoneTexto.innerHTML === "Não informado"
+      ? ""
+      : perfilTelefoneTexto.innerHTML;
 
   modalStudio.value =
-    perfilStudioTexto.innerHTML === "Não informado" ? "" : perfilStudioTexto.innerHTML;
+    perfilStudioTexto.innerHTML === "Não informado"
+      ? ""
+      : perfilStudioTexto.innerHTML;
 
   modalPerfil.classList.remove("oculto");
 });
@@ -1364,6 +1359,7 @@ async function verificarSessao() {
 
     await carregarAgendamentosSupabase();
     await carregarPerfil();
+    await carregarProcedimentos();
   } else {
     usuarioLogado = null;
 
@@ -1458,7 +1454,6 @@ async function uploadLogo() {
   return data.publicUrl;
 }
 
-
 perfilAvatar.addEventListener("click", () => {
   perfilLogo.click();
 });
@@ -1472,5 +1467,169 @@ perfilLogo.addEventListener("change", () => {
     <img src="${URL.createObjectURL(arquivo)}" alt="Logo do Studio">
   `;
 });
+
+async function salvarProcedimento() {
+  if (!usuarioLogado) return;
+
+  const nome = procedimentoNome.value.trim();
+  const valor = Number(procedimentoValor.value);
+  const duracao = Number(procedimentoDuracao.value);
+
+  if (!nome) {
+    alert("Informe o nome do procedimento.");
+    return;
+  }
+
+  if (valor <= 0) {
+    alert("Informe um valor válido.");
+    return;
+  }
+
+  if (duracao <= 0) {
+    alert("Informe a duração em minutos.");
+    return;
+  }
+
+  if (idProcedimentoEditando) {
+    const { error } = await supabaseClient
+      .from("procedimentos")
+      .update({
+        nome,
+        valor,
+        duracao,
+      })
+      .eq("id", idProcedimentoEditando)
+      .eq("user_id", usuarioLogado.id);
+
+    if (error) {
+      console.error(error);
+      alert("Erro ao atualizar procedimento.");
+      return;
+    }
+
+    idProcedimentoEditando = null;
+    btnSalvarProcedimento.innerHTML = "Salvar procedimento";
+  } else {
+    const { error } = await supabaseClient.from("procedimentos").insert({
+      user_id: usuarioLogado.id,
+      nome,
+      valor,
+      duracao,
+    });
+
+    if (error) {
+      console.error(error);
+      alert("Erro ao salvar procedimento.");
+      return;
+    }
+  }
+
+  procedimentoNome.value = "";
+  procedimentoValor.value = "";
+  procedimentoDuracao.value = "";
+
+  await carregarProcedimentos();
+}
+
+async function carregarProcedimentos() {
+  if (!usuarioLogado) return;
+
+  const { data, error } = await supabaseClient
+    .from("procedimentos")
+    .select("*")
+    .order("nome");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  procedimentos = data.map((item) => {
+    return {
+      id: item.id,
+      nome: item.nome,
+      valor: Number(item.valor),
+      duracao: Number(item.duracao),
+    };
+  });
+
+  renderizarProcedimentos();
+
+  listaProcedimentos.innerHTML = "";
+
+  if (data.length === 0) {
+    listaProcedimentos.innerHTML = `
+      <div class="vazio">
+        Nenhum procedimento cadastrado ainda.
+      </div>
+    `;
+    return;
+  }
+
+  data.forEach((procedimento) => {
+    listaProcedimentos.innerHTML += `
+      <div class="item-procedimento">
+        <div>
+          <strong>${procedimento.nome}</strong>
+          <p>${formatarMoeda(Number(procedimento.valor))}</p>
+          <span>${procedimento.duracao} min</span>
+        </div>
+
+        <div class="acoes">
+          <button
+            class="btn-small edit"
+            onclick="editarProcedimento(${procedimento.id}, '${procedimento.nome}', ${procedimento.valor}, ${procedimento.duracao})"
+          >
+            ✏️ Editar
+          </button>
+
+          <button
+            class="btn-small danger"
+            onclick="excluirProcedimento(${procedimento.id})"
+          >
+            Excluir
+          </button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function editarProcedimento(id, nome, valor, duracao) {
+  idProcedimentoEditando = id;
+
+  procedimentoNome.value = nome;
+  procedimentoValor.value = valor;
+  procedimentoDuracao.value = duracao;
+
+  btnSalvarProcedimento.innerHTML = "Salvar alterações";
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+}
+
+async function excluirProcedimento(id) {
+  const confirmar = confirm("Deseja excluir este procedimento?");
+
+  if (!confirmar) return;
+
+  const { error } = await supabaseClient
+    .from("procedimentos")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", usuarioLogado.id);
+
+  if (error) {
+    console.error(error);
+    alert("Erro ao excluir procedimento.");
+    return;
+  }
+
+  await carregarProcedimentos();
+}
+
+btnSalvarProcedimento.addEventListener("click", salvarProcedimento);
 
 verificarSessao();
