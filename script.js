@@ -38,6 +38,18 @@ const financeiroHojeTexto = document.querySelector("#financeiro-hoje");
 const financeiroSemanaTexto = document.querySelector("#financeiro-semana");
 const financeiroMesTexto = document.querySelector("#financeiro-mes");
 
+const ticketMedioTexto = document.querySelector("#ticket-medio");
+const procedimentoMaisRealizadoTexto = document.querySelector(
+  "#procedimento-mais-realizado",
+);
+const procedimentoMaisRealizadoQtd = document.querySelector(
+  "#procedimento-mais-realizado-qtd",
+);
+const totalAtendimentosFinanceiro = document.querySelector(
+  "#total-atendimentos-financeiro",
+);
+const topClientes = document.querySelector("#top-clientes");
+
 const authContainer = document.querySelector("#auth-container");
 const app = document.querySelector("#app");
 const authEmail = document.querySelector("#auth-email");
@@ -72,7 +84,7 @@ const btnSalvarProcedimento = document.querySelector(
   "#btn-salvar-procedimento",
 );
 const listaProcedimentos = document.querySelector("#lista-procedimentos");
-
+const listaHistorico = document.querySelector("#lista-historico");
 const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
 
 const modalSenha = document.querySelector("#modal-senha");
@@ -737,6 +749,115 @@ async function salvarAgendamento() {
   limparFormulario();
 }
 
+async function confirmarAgendamento(id) {
+  const agendamento = agendamentos.find((item) => item.id === id);
+
+  if (!agendamento) {
+    return;
+  }
+
+  const enviarWhatsapp = confirm("Deseja enviar confirmação pelo WhatsApp?");
+
+  const agendamentoAtualizado = {
+    ...agendamento,
+    status: "Confirmado",
+  };
+
+  const atualizadoOnline = await atualizarAgendamentoSupabase(
+    agendamentoAtualizado,
+  );
+
+  if (!atualizadoOnline) {
+    return;
+  }
+
+  agendamentos = agendamentos.map((item) => {
+    if (item.id === id) {
+      return agendamentoAtualizado;
+    }
+
+    return item;
+  });
+
+  if (enviarWhatsapp) {
+    let telefone = agendamento.telefone.replace(/\D/g, "");
+
+    if (!telefone.startsWith("55")) {
+      telefone = `55${telefone}`;
+    }
+
+    const dataFormatada = agendamento.data.split("-").reverse().join("/");
+
+    const procedimentosTexto = agendamento.procedimentos
+      .map((p) => p.nome)
+      .join(", ");
+
+    const nomeStudio = perfilStudioTexto.innerHTML || "Studio";
+
+    const mensagem = [
+      `Olá, ${agendamento.cliente}!`,
+      "",
+      "Seu horário foi confirmado.",
+      "",
+      `Data: ${dataFormatada}`,
+      `Horário: ${agendamento.horarioInicio}`,
+      `Procedimento: ${procedimentosTexto}`,
+      "",
+      "Estamos te aguardando!",
+      "",
+      nomeStudio,
+    ].join("\n");
+
+    window.open(
+      `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`,
+      "_blank",
+    );
+  }
+  salvarAgendamentos();
+  renderizarAgenda();
+}
+
+function enviarConfirmacaoWhatsapp(id) {
+  const agendamento = agendamentos.find((item) => item.id === id);
+
+  if (!agendamento) {
+    return;
+  }
+
+  let telefone = agendamento.telefone.replace(/\D/g, "");
+
+  if (!telefone.startsWith("55")) {
+    telefone = `55${telefone}`;
+  }
+
+  const dataFormatada = agendamento.data.split("-").reverse().join("/");
+
+  const procedimentosTexto = agendamento.procedimentos
+    .map((p) => p.nome)
+    .join(", ");
+
+  const nomeStudio = perfilStudioTexto.innerHTML || "Studio";
+
+  const mensagem = [
+    `Olá, ${agendamento.cliente}!`,
+    "",
+    "Seu horário foi confirmado.",
+    "",
+    `Data: ${dataFormatada}`,
+    `Horário: ${agendamento.horarioInicio}`,
+    `Procedimento: ${procedimentosTexto}`,
+    "",
+    "Estamos te aguardando!",
+    "",
+    nomeStudio,
+  ].join("\n");
+
+  window.open(
+    `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`,
+    "_blank",
+  );
+}
+
 async function marcarComoAtendido(id) {
   const agendamento = agendamentos.find((item) => item.id === id);
 
@@ -826,6 +947,11 @@ function editarAgendamento(id) {
   if (!agendamento) {
     return;
   }
+
+  mostrarSecao(
+    "agenda-section",
+    document.querySelector('[onclick*="agenda-section"]'),
+  );
 
   idEditando = id;
 
@@ -1006,13 +1132,32 @@ function renderizarAgenda() {
 
     atualizarCards();
     renderizarCalendarioVisual();
+    renderizarHistoricoFinanceiro();
+    atualizarResumoFinanceiro();
+    renderizarHistoricoGeral();
     return;
   }
 
   let agendamentosFiltrados = [...agendamentos];
 
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+    const dataAgendamento = new Date(`${agendamento.data}T00:00:00`);
+
+    return dataAgendamento >= hoje;
+  });
+
   if (filtroAtualAgenda !== "Todos") {
     agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+      if (filtroAtualAgenda === "Agendado") {
+        return (
+          agendamento.status === "Agendado" ||
+          agendamento.status === "Confirmado"
+        );
+      }
+
       return agendamento.status === filtroAtualAgenda;
     });
   }
@@ -1058,19 +1203,47 @@ function renderizarAgenda() {
 
     <div class="acoes">
 
-  <button class="btn-small edit" onclick="editarAgendamento(${agendamento.id})">
+  <button
+    class="btn-small edit"
+    onclick="editarAgendamento(${agendamento.id})"
+  >
     ✏️ Editar
   </button>
 
-  <button class="btn-small success" onclick="marcarComoAtendido(${agendamento.id})">
-    Atendido
+  ${
+    agendamento.status === "Confirmado"
+      ? `<button
+        class="btn-small confirm"
+        onclick="enviarConfirmacaoWhatsapp(${agendamento.id})"
+      >
+        Reenviar WhatsApp
+      </button>`
+      : `<button
+        class="btn-small confirm"
+        onclick="confirmarAgendamento(${agendamento.id})"
+      >
+        Confirmar
+      </button>`
+  }
+
+  <button
+    class="btn-small success"
+    onclick="marcarComoAtendido(${agendamento.id})"
+  >
+    ✔️ Atendido
   </button>
 
-  <button class="btn-small" onclick="cancelarAgendamento(${agendamento.id})">
+  <button
+    class="btn-small"
+    onclick="cancelarAgendamento(${agendamento.id})"
+  >
     Cancelar
   </button>
 
-  <button class="btn-small danger" onclick="excluirAgendamento(${agendamento.id})">
+  <button
+    class="btn-small danger"
+    onclick="excluirAgendamento(${agendamento.id})"
+  >
     Excluir
   </button>
 
@@ -1084,9 +1257,104 @@ function renderizarAgenda() {
   renderizarCalendarioVisual();
   renderizarHistoricoFinanceiro();
   atualizarResumoFinanceiro();
+  renderizarHistoricoGeral();
+}
+
+function renderizarHistoricoGeral() {
+  if (!listaHistorico) {
+    return;
+  }
+
+  listaHistorico.innerHTML = "";
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const historico = agendamentos
+    .filter((agendamento) => {
+      const dataAgendamento = new Date(`${agendamento.data}T00:00:00`);
+
+      return (
+        dataAgendamento < hoje ||
+        agendamento.status === "Atendido" ||
+        agendamento.status === "Cancelado" ||
+        agendamento.status === "Reagendado"
+      );
+    })
+    .sort((a, b) => {
+      return (
+        new Date(`${b.data}T${b.horarioInicio}`) -
+        new Date(`${a.data}T${a.horarioInicio}`)
+      );
+    });
+
+  if (historico.length === 0) {
+    listaHistorico.innerHTML = `
+      <div class="vazio">
+        Nenhum histórico encontrado.
+      </div>
+    `;
+    return;
+  }
+
+  historico.forEach((agendamento) => {
+    const procedimentosTexto = agendamento.procedimentos
+      .map((procedimento) => procedimento.nome)
+      .join(" + ");
+
+    const card = document.createElement("div");
+    card.classList.add("agendamento");
+
+    card.innerHTML = `
+      <div class="agendamento-top">
+        <div>
+          <h3>${agendamento.cliente}</h3>
+          <p>${agendamento.telefone}</p>
+        </div>
+
+        <span class="status ${agendamento.status}">
+          ${agendamento.status}
+        </span>
+      </div>
+
+      <p><strong>Data:</strong> ${agendamento.data.split("-").reverse().join("/")}</p>
+      <p><strong>Horário:</strong> ${agendamento.horarioInicio} às ${agendamento.horarioFim}</p>
+      <p><strong>Procedimentos:</strong> ${procedimentosTexto}</p>
+      <p><strong>Pagamento:</strong> ${agendamento.pagamento}</p>
+      <p><strong>Total:</strong> ${formatarMoeda(agendamento.valorTotal)}</p>
+
+      ${
+        agendamento.observacao
+          ? `<div class="observacao"><strong>Obs:</strong> ${agendamento.observacao}</div>`
+          : ""
+      }
+
+<div class="acoes">
+  <button
+    class="btn-small edit"
+    onclick="editarAgendamento(${agendamento.id})"
+  >
+    ✏️ Editar
+  </button>
+
+  <button
+    class="btn-small danger"
+    onclick="excluirAgendamento(${agendamento.id})"
+  >
+    Excluir
+  </button>
+</div>
+`;
+
+    listaHistorico.appendChild(card);
+  });
 }
 
 function renderizarHistoricoFinanceiro() {
+  if (!historicoFinanceiro) {
+    return;
+  }
+
   historicoFinanceiro.innerHTML = "";
 
   const atendidos = agendamentos
@@ -1163,11 +1431,11 @@ function renderizarHistoricoFinanceiro() {
 
 function atualizarResumoFinanceiro() {
   const hoje = new Date();
-
   const hojeFormatado = hoje.toISOString().split("T")[0];
 
   const inicioSemana = new Date(hoje);
   inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+  inicioSemana.setHours(0, 0, 0, 0);
 
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
@@ -1193,27 +1461,119 @@ function atualizarResumoFinanceiro() {
     })
     .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
 
+  const ticketMedio =
+    atendidos.length > 0
+      ? atendidos.reduce((total, agendamento) => {
+          return total + agendamento.valorTotal;
+        }, 0) / atendidos.length
+      : 0;
+
+  const procedimentosContagem = {};
+
+  atendidos.forEach((agendamento) => {
+    agendamento.procedimentos.forEach((procedimento) => {
+      if (!procedimentosContagem[procedimento.nome]) {
+        procedimentosContagem[procedimento.nome] = 0;
+      }
+
+      procedimentosContagem[procedimento.nome]++;
+    });
+  });
+
+  let procedimentoMaisRealizado = "Nenhum ainda";
+  let quantidadeProcedimento = 0;
+
+  Object.keys(procedimentosContagem).forEach((nome) => {
+    if (procedimentosContagem[nome] > quantidadeProcedimento) {
+      procedimentoMaisRealizado = nome;
+      quantidadeProcedimento = procedimentosContagem[nome];
+    }
+  });
+
+  const clientesRanking = {};
+
+  atendidos.forEach((agendamento) => {
+    if (!clientesRanking[agendamento.cliente]) {
+      clientesRanking[agendamento.cliente] = {
+        quantidade: 0,
+        total: 0,
+      };
+    }
+
+    clientesRanking[agendamento.cliente].quantidade++;
+    clientesRanking[agendamento.cliente].total += agendamento.valorTotal;
+  });
+
+  const top5Clientes = Object.entries(clientesRanking)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5);
+
   financeiroHojeTexto.innerHTML = valorFinanceiro(totalHoje);
   financeiroSemanaTexto.innerHTML = valorFinanceiro(totalSemana);
   financeiroMesTexto.innerHTML = valorFinanceiro(totalMes);
+
+  ticketMedioTexto.innerHTML = valorFinanceiro(ticketMedio);
+  procedimentoMaisRealizadoTexto.innerHTML = procedimentoMaisRealizado;
+  procedimentoMaisRealizadoQtd.innerHTML =
+    quantidadeProcedimento === 1
+      ? "1 atendimento"
+      : `${quantidadeProcedimento} atendimentos`;
+
+  totalAtendimentosFinanceiro.innerHTML = atendidos.length;
+
+  topClientes.innerHTML = "";
+
+  if (top5Clientes.length === 0) {
+    topClientes.innerHTML = `
+      <div class="vazio">
+        Nenhum cliente atendido ainda.
+      </div>
+    `;
+  } else {
+    top5Clientes.forEach(([nome, dados], index) => {
+      const item = document.createElement("div");
+      item.classList.add("top-cliente-item");
+
+      item.innerHTML = `
+        <div>
+          <strong>${index + 1}. ${nome}</strong>
+          <small>${dados.quantidade} atendimento(s)</small>
+        </div>
+
+        <span>${valorFinanceiro(dados.total)}</span>
+      `;
+
+      topClientes.appendChild(item);
+    });
+  }
 }
 
 function atualizarCards() {
   const totalAgendamentos = agendamentos.length;
 
   const totalPrevisto = agendamentos
-    .filter((item) => {
-      return item.status !== "Cancelado" && item.status !== "Atendido";
+    .filter((agendamento) => {
+      return (
+        agendamento.status === "Agendado" || agendamento.status === "Confirmado"
+      );
     })
-    .reduce((total, item) => total + item.valorTotal, 0);
+    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
 
   const totalFinanceiro = agendamentos
-    .filter((item) => item.status === "Atendido")
-    .reduce((total, item) => total + item.valorTotal, 0);
+    .filter((agendamento) => agendamento.status === "Atendido")
+    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
 
-  totalAgendamentosTexto.innerHTML = totalAgendamentos;
-  totalPrevistoTexto.innerHTML = valorFinanceiro(totalPrevisto);
-  totalFinanceiroTexto.innerHTML = valorFinanceiro(totalFinanceiro);
+  if (totalAgendamentosTexto) {
+    totalAgendamentosTexto.innerHTML = totalAgendamentos;
+  }
+
+  if (totalPrevistoTexto) {
+    totalPrevistoTexto.innerHTML = valorFinanceiro(totalPrevisto);
+  }
+
+  if (totalFinanceiroTexto) {
+    totalFinanceiroTexto.innerHTML = valorFinanceiro(totalFinanceiro);
+  }
 }
 
 btnSalvar.addEventListener("click", salvarAgendamento);
@@ -1245,19 +1605,21 @@ document.addEventListener("click", (event) => {
   }
 });
 
-btnOcultarValores.addEventListener("click", () => {
-  valoresOcultos = !valoresOcultos;
+if (btnOcultarValores) {
+  btnOcultarValores.addEventListener("click", () => {
+    valoresOcultos = !valoresOcultos;
 
-  if (valoresOcultos) {
-    btnOcultarValores.innerHTML = "Mostrar valores";
-  } else {
-    btnOcultarValores.innerHTML = "Ocultar valores";
-  }
+    if (valoresOcultos) {
+      btnOcultarValores.innerHTML = "Mostrar valores";
+    } else {
+      btnOcultarValores.innerHTML = "Ocultar valores";
+    }
 
-  atualizarCards();
-  renderizarHistoricoFinanceiro();
-  atualizarResumoFinanceiro();
-});
+    atualizarCards();
+    renderizarHistoricoFinanceiro();
+    atualizarResumoFinanceiro();
+  });
+}
 
 function mostrarSecao(idSecao, botaoClicado) {
   const secoes = document.querySelectorAll(".app-section");
@@ -1335,10 +1697,11 @@ btnSalvarSenha.addEventListener("click", async () => {
     return;
   }
 
-  const { error: erroSenhaAtual } = await supabaseClient.auth.signInWithPassword({
-    email: usuarioLogado.email,
-    password: senhaAtualDigitada,
-  });
+  const { error: erroSenhaAtual } =
+    await supabaseClient.auth.signInWithPassword({
+      email: usuarioLogado.email,
+      password: senhaAtualDigitada,
+    });
 
   if (erroSenhaAtual) {
     alert("Senha atual incorreta.");
@@ -1658,7 +2021,7 @@ async function carregarProcedimentos() {
         <div class="acoes">
           <button
             class="btn-small edit"
-            onclick="editarProcedimento(${procedimento.id}, '${procedimento.nome}', ${procedimento.valor}, ${procedimento.duracao})"
+            onclick="editarProcedimento(${procedimento.id})"
           >
             ✏️ Editar
           </button>

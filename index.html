@@ -111,6 +111,13 @@
 
         <button
           class="menu-btn"
+          onclick="mostrarSecao('historico-section', this)"
+        >
+          Histórico
+        </button>
+
+        <button
+          class="menu-btn"
           onclick="mostrarSecao('procedimentos-section', this)"
         >
           Procedimentos
@@ -245,6 +252,13 @@
               >
                 Cancelado
               </button>
+
+              <button
+                class="filtro-btn"
+                onclick="filtrarAgenda('Reagendado', this)"
+              >
+                Reagendado
+              </button>
             </div>
 
             <button
@@ -278,54 +292,96 @@
       <!-- FINANCEIRO -->
 
       <div id="financeiro-section" class="app-section">
-        <div class="financeiro-topo">
-          <section class="resumo-financeiro">
-            <div class="resumo-financeiro-card">
-              <span>Hoje</span>
-              <strong id="financeiro-hoje">R$ 0,00</strong>
-            </div>
-
-            <div class="resumo-financeiro-card">
-              <span>Semana</span>
-              <strong id="financeiro-semana">R$ 0,00</strong>
-            </div>
-
-            <div class="resumo-financeiro-card">
-              <span>Mês</span>
-              <strong id="financeiro-mes">R$ 0,00</strong>
-            </div>
-          </section>
-
-          <h2>Financeiro</h2>
+        <div class="financeiro-header">
+          <div>
+            <p class="subtitle">Dashboard financeiro</p>
+            <h2>Resumo profissional</h2>
+          </div>
 
           <button id="btn-ocultar-valores" class="btn-outline" type="button">
             Ocultar valores
           </button>
         </div>
 
-        <section class="cards">
-          <div class="card">
-            <span>Agendamentos</span>
-            <strong id="total-agendamentos">0</strong>
+        <section class="financeiro-grid">
+          <div class="financeiro-card-destaque">
+            <span>Faturamento hoje</span>
+            <strong id="financeiro-hoje">R$ 0,00</strong>
+            <small>Somente atendimentos concluídos</small>
           </div>
 
-          <div class="card">
-            <span>Previsto</span>
-            <strong id="total-previsto">R$ 0,00</strong>
+          <div class="financeiro-card-destaque">
+            <span>Faturamento semana</span>
+            <strong id="financeiro-semana">R$ 0,00</strong>
+            <small>De domingo até hoje</small>
           </div>
 
-          <div class="card">
-            <span>Financeiro</span>
-            <strong id="total-financeiro">R$ 0,00</strong>
+          <div class="financeiro-card-destaque">
+            <span>Faturamento mês</span>
+            <strong id="financeiro-mes">R$ 0,00</strong>
+            <small>Total do mês atual</small>
+          </div>
+
+          <div class="financeiro-card-destaque">
+            <span>Ticket médio</span>
+            <strong id="ticket-medio">R$ 0,00</strong>
+            <small>Média por atendimento</small>
           </div>
         </section>
 
-        <section class="financeiro-card">
-          <h2>Histórico de procedimentos</h2>
+        <section class="financeiro-indicadores">
+          <div class="indicador-card">
+            <span>Procedimento mais realizado</span>
+            <strong id="procedimento-mais-realizado">Nenhum ainda</strong>
+            <small id="procedimento-mais-realizado-qtd">0 atendimento</small>
+          </div>
 
-          <div id="historico-financeiro" class="historico-financeiro"></div>
+          <div class="indicador-card">
+            <span>Total de atendimentos</span>
+            <strong id="total-atendimentos-financeiro">0</strong>
+            <small>Atendimentos finalizados</small>
+          </div>
+
+          <div class="indicador-card">
+            <span>Total previsto</span>
+            <strong id="total-previsto">R$ 0,00</strong>
+            <small>Agendados e confirmados</small>
+          </div>
+
+          <div class="indicador-card">
+            <span>Total recebido</span>
+            <strong id="total-financeiro">R$ 0,00</strong>
+            <small>Status atendido</small>
+          </div>
+        </section>
+
+        <section class="financeiro-duas-colunas">
+          <div class="financeiro-card">
+            <h2>Top 5 clientes</h2>
+            <div id="top-clientes" class="top-clientes"></div>
+          </div>
+
+          <div class="financeiro-card">
+            <h2>Histórico de procedimentos</h2>
+            <div id="historico-financeiro" class="historico-financeiro"></div>
+          </div>
         </section>
       </div>
+
+      <!-- HISTÓRICO -->
+
+<div id="historico-section" class="app-section">
+  <section class="agenda-card">
+    <div class="section-title">
+      <div>
+        <p class="subtitle">Histórico geral</p>
+        <h2>Atendimentos anteriores</h2>
+      </div>
+    </div>
+
+    <div id="lista-historico" class="lista-agenda"></div>
+  </section>
+</div>
 
       <!-- PROCEDIMENTOS -->
 

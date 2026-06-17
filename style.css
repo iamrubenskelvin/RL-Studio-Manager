@@ -1,3 +1,5 @@
+/*CSS - Styles*/
+
 * {
   margin: 0;
   padding: 0;
@@ -1373,4 +1375,176 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .password-toggle .material-symbols-outlined {
   font-size: 22px;
+}
+
+/* DASHBOARD FINANCEIRO */
+
+.financeiro-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.financeiro-header h2 {
+  margin: 0;
+}
+
+.financeiro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.financeiro-card-destaque {
+  background: linear-gradient(135deg, #fff7f8, #fffdf4);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.05);
+}
+
+.financeiro-card-destaque span {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.financeiro-card-destaque strong {
+  display: block;
+  font-size: 28px;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.financeiro-card-destaque small {
+  color: #888;
+}
+
+.financeiro-indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.indicador-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.indicador-card span {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.indicador-card strong {
+  display: block;
+  color: var(--title);
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.indicador-card small {
+  color: #888;
+}
+
+.financeiro-duas-colunas {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+}
+
+.top-clientes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.top-cliente-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.top-cliente-item strong {
+  color: var(--title);
+}
+
+.top-cliente-item span {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .financeiro-grid,
+  .financeiro-indicadores {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .financeiro-duas-colunas {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .financeiro-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .financeiro-grid,
+  .financeiro-indicadores {
+    grid-template-columns: 1fr;
+  }
+
+  .financeiro-card-destaque strong {
+    font-size: 24px;
+  }
+}
+
+.top-cliente-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+
+.top-cliente-item div {
+  min-width: 0;
+}
+
+.top-cliente-item small {
+  display: block;
+  margin-top: 4px;
+  color: #888;
+}
+
+.top-cliente-item span {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .top-cliente-item {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+}
+
+.btn-small.confirm {
+  background: #fff7df;
+  color: #9b7a14;
+}
+
+.status.Reagendado {
+  background: #eef2ff;
+  color: #4f46e5;
 }
