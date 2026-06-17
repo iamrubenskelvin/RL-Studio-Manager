@@ -1143,3 +1143,141 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
   background: #c93f3f;
 }
+
+.perfil-avatar {
+  overflow: hidden;
+}
+
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.perfil-avatar {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.perfil-avatar::after {
+  content: "Editar";
+  position: absolute;
+  inset: auto 0 0 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 0;
+  opacity: 0;
+  transition: 0.2s;
+}
+
+.perfil-avatar:hover::after {
+  opacity: 1;
+}
+
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.perfil-dados {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.perfil-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid #eee;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.perfil-linha span {
+  display: block;
+  color: #777;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.perfil-linha strong {
+  color: #222;
+  font-size: 16px;
+}
+
+.btn-editar-perfil {
+  border: none;
+  background: #f6e7ea;
+  color: #b76e79;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.perfil-form-oculto {
+  display: none;
+}
+
+.oculto {
+  display: none;
+}
+
+.modal-perfil {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+.modal-perfil-card {
+  width: 90%;
+  max-width: 420px;
+
+  background: white;
+  border-radius: 24px;
+
+  padding: 24px;
+
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+
+  animation: abrirModal 0.25s ease;
+}
+
+.modal-perfil-card h2 {
+  margin-bottom: 20px;
+}
+
+.modal-acoes {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@keyframes abrirModal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-perfil.oculto {
+  display: none !important;
+}

@@ -47,6 +47,23 @@ const btnRegister = document.querySelector("#btn-register");
 const btnGoogle = document.querySelector("#btn-google");
 const btnForgotPassword = document.querySelector("#btn-forgot-password");
 const btnTogglePassword = document.querySelector("#btn-toggle-password");
+const perfilEmail = document.querySelector("#perfil-email");
+const btnLogout = document.querySelector("#btn-logout");
+const perfilLogo = document.querySelector("#perfil-logo");
+const perfilAvatar = document.querySelector("#perfil-avatar");
+const perfilTitulo = document.querySelector("#perfil-titulo");
+
+const perfilNomeTexto = document.querySelector("#perfil-nome-texto");
+const perfilTelefoneTexto = document.querySelector("#perfil-telefone-texto");
+const perfilStudioTexto = document.querySelector("#perfil-studio-texto");
+const btnEditarPerfil = document.querySelector("#btn-editar-perfil");
+
+const modalPerfil = document.querySelector("#modal-perfil");
+const modalNome = document.querySelector("#modal-nome");
+const modalTelefone = document.querySelector("#modal-telefone");
+const modalStudio = document.querySelector("#modal-studio");
+const btnCancelarModal = document.querySelector("#btn-cancelar-modal");
+const btnSalvarModal = document.querySelector("#btn-salvar-modal");
 
 let usuarioLogado = null;
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
@@ -108,7 +125,7 @@ btnLogin.addEventListener("click", async () => {
 
   await carregarAgendamentosSupabase();
 
-  atualizarPerfil();
+  await carregarPerfil();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -348,9 +365,33 @@ function formatarTelefone(valor) {
   return `(${numero.slice(0, 2)}) ${numero.slice(2, 3)} ${numero.slice(3, 7)}-${numero.slice(7)}`;
 }
 
+function formatarTelefonePerfil(valor) {
+  let numero = valor.replace(/\D/g, "");
+
+  if (numero.length > 11) {
+    numero = numero.slice(0, 11);
+  }
+
+  if (numero.length <= 2) {
+    return numero;
+  }
+
+  if (numero.length <= 3) {
+    return `(${numero.slice(0, 2)}) ${numero.slice(2)}`;
+  }
+
+  if (numero.length <= 7) {
+    return `(${numero.slice(0, 2)}) ${numero.slice(2, 3)} ${numero.slice(3)}`;
+  }
+
+  return `(${numero.slice(0, 2)}) ${numero.slice(2, 3)} ${numero.slice(3, 7)}-${numero.slice(7)}`;
+}
+
 telefoneInput.addEventListener("input", () => {
   telefoneInput.value = formatarTelefone(telefoneInput.value);
 });
+
+
 
 clienteInput.addEventListener("input", () => {
   const texto = clienteInput.value.trim().toLowerCase();
@@ -1231,8 +1272,89 @@ function mostrarSecao(idSecao, botaoClicado) {
   botaoClicado.classList.add("active");
 }
 
+btnEditarPerfil.addEventListener("click", () => {
+  modalNome.value =
+    perfilNomeTexto.innerHTML === "Não informado" ? "" : perfilNomeTexto.innerHTML;
+
+  modalTelefone.value =
+    perfilTelefoneTexto.innerHTML === "Não informado" ? "" : perfilTelefoneTexto.innerHTML;
+
+  modalStudio.value =
+    perfilStudioTexto.innerHTML === "Não informado" ? "" : perfilStudioTexto.innerHTML;
+
+  modalPerfil.classList.remove("oculto");
+});
+
+btnCancelarModal.addEventListener("click", () => {
+  modalPerfil.classList.add("oculto");
+});
+
+modalTelefone.addEventListener("input", () => {
+  modalTelefone.value = formatarTelefonePerfil(modalTelefone.value);
+});
+
+btnSalvarModal.addEventListener("click", async () => {
+  const logoUrl = await uploadLogo();
+
+  const perfilAtualizado = {
+    id: usuarioLogado.id,
+    nome: modalNome.value.trim(),
+    telefone: modalTelefone.value.trim(),
+    nome_estudio: modalStudio.value.trim(),
+  };
+
+  if (logoUrl) {
+    perfilAtualizado.logo_url = logoUrl;
+  }
+
+  const salvo = await salvarPerfil(perfilAtualizado);
+
+  if (!salvo) return;
+
+  perfilNomeTexto.innerHTML = perfilAtualizado.nome || "Não informado";
+  perfilTelefoneTexto.innerHTML = perfilAtualizado.telefone || "Não informado";
+  perfilStudioTexto.innerHTML =
+    perfilAtualizado.nome_estudio || "Não informado";
+
+  perfilTitulo.innerHTML =
+    perfilAtualizado.nome_estudio || "Perfil profissional";
+
+  modalPerfil.classList.add("oculto");
+});
+
+document.addEventListener("click", async (event) => {
+  if (event.target.id === "btn-logout") {
+    console.log("Clicou no botão sair");
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      console.error("Erro ao sair:", error);
+      alert("Erro ao sair da conta.");
+      return;
+    }
+
+    usuarioLogado = null;
+
+    localStorage.removeItem("supabase.auth.token");
+    sessionStorage.clear();
+
+    authContainer.style.display = "flex";
+    app.style.display = "none";
+
+    location.reload();
+  }
+});
+
 async function verificarSessao() {
-  const { data } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error("Erro ao verificar sessão:", error);
+    authContainer.style.display = "flex";
+    app.style.display = "none";
+    return;
+  }
 
   if (data.session) {
     usuarioLogado = data.session.user;
@@ -1241,26 +1363,114 @@ async function verificarSessao() {
     app.style.display = "block";
 
     await carregarAgendamentosSupabase();
+    await carregarPerfil();
+  } else {
+    usuarioLogado = null;
 
-    atualizarPerfil();
+    authContainer.style.display = "flex";
+    app.style.display = "none";
   }
 }
 
-const perfilEmail = document.querySelector("#perfil-email");
-const btnLogout = document.querySelector("#btn-logout");
+async function carregarPerfil() {
+  if (!usuarioLogado) return;
 
-async function atualizarPerfil() {
-  if (!usuarioLogado) {
+  perfilEmail.innerHTML = usuarioLogado.email;
+
+  const { data, error } = await supabaseClient
+    .from("perfis")
+    .select("*")
+    .eq("id", usuarioLogado.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao carregar perfil:", error);
     return;
   }
 
-  perfilEmail.innerHTML = usuarioLogado.email;
+  if (!data) {
+    perfilTitulo.innerHTML = "Perfil profissional";
+    perfilNomeTexto.innerHTML = "Não informado";
+    perfilTelefoneTexto.innerHTML = "Não informado";
+    perfilStudioTexto.innerHTML = "Não informado";
+    return;
+  }
+
+  perfilNomeTexto.innerHTML = data.nome || "Não informado";
+  perfilTelefoneTexto.innerHTML = data.telefone || "Não informado";
+  perfilStudioTexto.innerHTML = data.nome_estudio || "Não informado";
+
+  perfilTitulo.innerHTML = data.nome_estudio || "Perfil profissional";
+
+  if (data.logo_url) {
+    perfilAvatar.innerHTML = `
+      <img src="${data.logo_url}" alt="Logo do Studio">
+    `;
+  }
 }
 
-btnLogout.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
+async function salvarPerfil(perfilAtualizado) {
+  if (!usuarioLogado) {
+    alert("Usuário não logado.");
+    return;
+  }
 
-  location.reload();
+  const { error } = await supabaseClient
+    .from("perfis")
+    .upsert(perfilAtualizado);
+
+  if (error) {
+    console.error("Erro ao salvar perfil:", error);
+    alert("Erro ao salvar perfil.");
+    return false;
+  }
+
+  return true;
+}
+
+async function uploadLogo() {
+  const arquivo = perfilLogo.files[0];
+
+  if (!arquivo) {
+    return null;
+  }
+
+  const extensao = arquivo.name.split(".").pop();
+
+  const nomeArquivo = `${usuarioLogado.id}.${extensao}`;
+
+  const { error } = await supabaseClient.storage
+    .from("logos")
+    .upload(nomeArquivo, arquivo, {
+      upsert: true,
+    });
+
+  if (error) {
+    console.error(error);
+    alert("Erro ao enviar logo.");
+    return null;
+  }
+
+  const { data } = supabaseClient.storage
+    .from("logos")
+    .getPublicUrl(nomeArquivo);
+
+  return data.publicUrl;
+}
+
+
+perfilAvatar.addEventListener("click", () => {
+  perfilLogo.click();
+});
+
+perfilLogo.addEventListener("change", () => {
+  const arquivo = perfilLogo.files[0];
+
+  if (!arquivo) return;
+
+  perfilAvatar.innerHTML = `
+    <img src="${URL.createObjectURL(arquivo)}" alt="Logo do Studio">
+  `;
 });
 
 verificarSessao();

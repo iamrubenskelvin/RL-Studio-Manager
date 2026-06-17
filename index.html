@@ -313,11 +313,49 @@
       <div id="perfil-section" class="app-section">
         <section class="perfil-card">
           <div class="perfil-topo">
-            <div class="perfil-avatar">SM</div>
+            <div class="perfil-avatar" id="perfil-avatar">SM</div>
+
+            <input
+              type="file"
+              id="perfil-logo"
+              accept="image/png,image/jpeg,image/webp"
+              hidden
+            />
 
             <div>
-              <h2>Perfil profissional</h2>
+              <h2 id="perfil-titulo">Perfil profissional</h2>
               <p id="perfil-email">Carregando email...</p>
+            </div>
+          </div>
+
+          <div class="perfil-dados">
+            <div class="perfil-linha">
+              <div>
+                <span>Nome</span>
+                <strong id="perfil-nome-texto">Não informado</strong>
+              </div>
+
+              <button
+                id="btn-editar-perfil"
+                class="btn-editar-perfil"
+                type="button"
+              >
+                ✏️
+              </button>
+            </div>
+
+            <div class="perfil-linha">
+              <div>
+                <span>Telefone</span>
+                <strong id="perfil-telefone-texto">Não informado</strong>
+              </div>
+            </div>
+
+            <div class="perfil-linha">
+              <div>
+                <span>Studio</span>
+                <strong id="perfil-studio-texto">Não informado</strong>
+              </div>
             </div>
           </div>
 
@@ -337,6 +375,41 @@
             Sair da conta
           </button>
         </section>
+      </div>
+
+      <div id="modal-perfil" class="modal-perfil oculto">
+        <div class="modal-perfil-card">
+          <h2>Editar perfil</h2>
+
+          <div class="field">
+            <label for="modal-nome">Nome</label>
+            <input id="modal-nome" type="text" placeholder="Seu nome" />
+          </div>
+
+          <div class="field">
+            <label for="modal-telefone">Telefone</label>
+            <input
+              id="modal-telefone"
+              type="text"
+              placeholder="(11) 99999-9999"
+            />
+          </div>
+
+          <div class="field">
+            <label for="modal-studio">Nome do Studio</label>
+            <input id="modal-studio" type="text" placeholder="Digite o nome do seu estúdio" />
+          </div>
+
+          <div class="modal-acoes">
+            <button id="btn-cancelar-modal" class="btn-outline" type="button">
+              Cancelar
+            </button>
+
+            <button id="btn-salvar-modal" class="btn-primary" type="button">
+              Salvar
+            </button>
+          </div>
+        </div>
       </div>
     </main>
 
