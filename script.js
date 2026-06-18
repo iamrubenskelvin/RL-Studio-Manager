@@ -163,9 +163,9 @@ btnLogin.addEventListener("click", async () => {
   authContainer.style.display = "none";
   app.style.display = "block";
 
-  await carregarAgendamentosSupabase();
-
   await carregarPerfil();
+  await carregarProcedimentos();
+  await carregarAgendamentosSupabase();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -1826,9 +1826,9 @@ async function verificarSessao() {
     authContainer.style.display = "none";
     app.style.display = "block";
 
-    await carregarAgendamentosSupabase();
     await carregarPerfil();
     await carregarProcedimentos();
+    await carregarAgendamentosSupabase();
   } else {
     usuarioLogado = null;
 
