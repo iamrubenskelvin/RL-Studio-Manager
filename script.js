@@ -18,9 +18,6 @@ const procedimentosLista = document.querySelector("#procedimentos-lista");
 const tempoTotalTexto = document.querySelector("#tempo-total");
 const valorTotalTexto = document.querySelector("#valor-total");
 
-const btnSalvar = document.querySelector("#btn-salvar");
-const btnLimpar = document.querySelector("#btn-limpar");
-
 const listaAgenda = document.querySelector("#lista-agenda");
 
 const totalAgendamentosTexto = document.querySelector("#total-agendamentos");
@@ -32,7 +29,6 @@ const dataCalendarioTexto = document.querySelector("#data-calendario");
 
 const sugestoesClientes = document.querySelector("#sugestoes-clientes");
 const historicoFinanceiro = document.querySelector("#historico-financeiro");
-const btnOcultarValores = document.querySelector("#btn-ocultar-valores");
 
 const financeiroHojeTexto = document.querySelector("#financeiro-hoje");
 const financeiroSemanaTexto = document.querySelector("#financeiro-semana");
@@ -55,54 +51,85 @@ const authContainer = document.querySelector("#auth-container");
 const app = document.querySelector("#app");
 const authEmail = document.querySelector("#auth-email");
 const authPassword = document.querySelector("#auth-password");
-const btnLogin = document.querySelector("#btn-login");
-const btnRegister = document.querySelector("#btn-register");
-const btnGoogle = document.querySelector("#btn-google");
-const btnForgotPassword = document.querySelector("#btn-forgot-password");
-const btnTogglePassword = document.querySelector("#btn-toggle-password");
+
 const perfilEmail = document.querySelector("#perfil-email");
-const btnLogout = document.querySelector("#btn-logout");
 const perfilLogo = document.querySelector("#perfil-logo");
 const perfilAvatar = document.querySelector("#perfil-avatar");
 const perfilTitulo = document.querySelector("#perfil-titulo");
-
 const perfilNomeTexto = document.querySelector("#perfil-nome-texto");
 const perfilTelefoneTexto = document.querySelector("#perfil-telefone-texto");
 const perfilStudioTexto = document.querySelector("#perfil-studio-texto");
-const btnEditarPerfil = document.querySelector("#btn-editar-perfil");
 
 const modalPerfil = document.querySelector("#modal-perfil");
 const modalNome = document.querySelector("#modal-nome");
 const modalTelefone = document.querySelector("#modal-telefone");
 const modalStudio = document.querySelector("#modal-studio");
+
+const btnSalvar = document.querySelector("#btn-salvar");
+const btnLimpar = document.querySelector("#btn-limpar");
+const btnOcultarValores = document.querySelector("#btn-ocultar-valores");
+const btnLogin = document.querySelector("#btn-login");
+const btnGoogle = document.querySelector("#btn-google");
+const btnLogout = document.querySelector("#btn-logout");
+const btnRegister = document.querySelector("#btn-register");
+const btnForgotPassword = document.querySelector("#btn-forgot-password");
+const btnTogglePassword = document.querySelector("#btn-toggle-password");
+const btnEditarPerfil = document.querySelector("#btn-editar-perfil");
 const btnCancelarModal = document.querySelector("#btn-cancelar-modal");
 const btnSalvarModal = document.querySelector("#btn-salvar-modal");
+const btnSalvarProcedimento = document.querySelector(
+  "#btn-salvar-procedimento",
+);
+const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
+const btnCancelarSenha = document.querySelector("#btn-cancelar-senha");
+const btnSalvarSenha = document.querySelector("#btn-salvar-senha");
+const btnSalvarDespesa = document.querySelector("#btn-salvar-despesa");
+const btnGerarPdf = document.querySelector("#btn-gerar-pdf");
+const inputDataInicioPdf = document.getElementById("pdfDataInicio");
+const inputDataFimPdf = document.getElementById("pdfDataFim");
+
+const hojePdf = new Date();
+
+const primeiroDiaMesPdf = new Date(
+  hojePdf.getFullYear(),
+  hojePdf.getMonth(),
+  1
+);
+
+if (inputDataInicioPdf && inputDataFimPdf) {
+  inputDataInicioPdf.value = primeiroDiaMesPdf.toISOString().split("T")[0];
+  inputDataFimPdf.value = hojePdf.toISOString().split("T")[0];
+}
+
+
 
 const procedimentoNome = document.querySelector("#procedimento-nome");
 const procedimentoValor = document.querySelector("#procedimento-valor");
 const procedimentoDuracao = document.querySelector("#procedimento-duracao");
-const btnSalvarProcedimento = document.querySelector(
-  "#btn-salvar-procedimento",
-);
+
 const listaProcedimentos = document.querySelector("#lista-procedimentos");
 const listaHistorico = document.querySelector("#lista-historico");
-const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
 
 const modalSenha = document.querySelector("#modal-senha");
 
 const novaSenha = document.querySelector("#nova-senha");
 const confirmarSenha = document.querySelector("#confirmar-senha");
-
 const senhaAtual = document.querySelector("#senha-atual");
 
 const toggleSenhaAtual = document.querySelector("#toggle-senha-atual");
-
 const toggleNovaSenha = document.querySelector("#toggle-nova-senha");
-
 const toggleConfirmarSenha = document.querySelector("#toggle-confirmar-senha");
 
-const btnCancelarSenha = document.querySelector("#btn-cancelar-senha");
-const btnSalvarSenha = document.querySelector("#btn-salvar-senha");
+const dashboardReceita = document.querySelector("#dashboard-receita");
+const dashboardDespesas = document.querySelector("#dashboard-despesas");
+const dashboardLucro = document.querySelector("#dashboard-lucro");
+const despesaDescricaoInput = document.querySelector("#despesa-descricao");
+const despesaCategoriaInput = document.querySelector("#despesa-categoria");
+const despesaValorInput = document.querySelector("#despesa-valor");
+const despesaDataInput = document.querySelector("#despesa-data");
+const listaDespesas = document.querySelector("#lista-despesas");
+
+let despesas = [];
 
 let usuarioLogado = null;
 let clientes = JSON.parse(localStorage.getItem("rl-clientes")) || [];
@@ -166,6 +193,7 @@ btnLogin.addEventListener("click", async () => {
   await carregarPerfil();
   await carregarProcedimentos();
   await carregarAgendamentosSupabase();
+  await carregarDespesasSupabase();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -344,6 +372,73 @@ async function excluirAgendamentoSupabase(id) {
   if (error) {
     console.error("Erro ao excluir:", error);
     alert("Erro ao excluir no Supabase.");
+    return false;
+  }
+
+  return true;
+}
+
+async function salvarDespesaSupabase(despesa) {
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  const { data, error } = await supabaseClient
+    .from("despesas")
+    .insert([
+      {
+        user_id: user.id,
+        descricao: despesa.descricao,
+        categoria: despesa.categoria,
+        valor: despesa.valor,
+        data: despesa.data,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao salvar despesa:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function carregarDespesasSupabase() {
+  if (!usuarioLogado) {
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("despesas")
+    .select("*")
+    .order("data", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao carregar despesas:", error);
+    return;
+  }
+
+  despesas = data.map((item) => {
+    return {
+      id: item.id,
+      descricao: item.descricao,
+      categoria: item.categoria,
+      valor: Number(item.valor),
+      data: item.data,
+    };
+  });
+
+  renderizarDespesas();
+  atualizarResumoFinanceiro();
+}
+
+async function excluirDespesaSupabase(id) {
+  const { error } = await supabaseClient.from("despesas").delete().eq("id", id);
+
+  if (error) {
+    console.error("Erro ao excluir despesa:", error);
     return false;
   }
 
@@ -1538,6 +1633,27 @@ function atualizarResumoFinanceiro() {
   financeiroSemanaTexto.innerHTML = valorFinanceiro(totalSemana);
   financeiroMesTexto.innerHTML = valorFinanceiro(totalMes);
 
+  const despesasMes = despesas
+    .filter((despesa) => {
+      const dataDespesa = new Date(`${despesa.data}T00:00:00`);
+      return dataDespesa >= inicioMes && dataDespesa <= hoje;
+    })
+    .reduce((total, despesa) => total + despesa.valor, 0);
+
+  const lucroMes = totalMes - despesasMes;
+
+  if (dashboardReceita) {
+    dashboardReceita.innerHTML = valorFinanceiro(totalMes);
+  }
+
+  if (dashboardDespesas) {
+    dashboardDespesas.innerHTML = valorFinanceiro(despesasMes);
+  }
+
+  if (dashboardLucro) {
+    dashboardLucro.innerHTML = valorFinanceiro(lucroMes);
+  }
+
   ticketMedioTexto.innerHTML = valorFinanceiro(ticketMedio);
   procedimentoMaisRealizadoTexto.innerHTML = procedimentoMaisRealizado;
   procedimentoMaisRealizadoQtd.innerHTML =
@@ -1829,6 +1945,7 @@ async function verificarSessao() {
     await carregarPerfil();
     await carregarProcedimentos();
     await carregarAgendamentosSupabase();
+    await carregarDespesasSupabase();
   } else {
     usuarioLogado = null;
 
@@ -2130,3 +2247,388 @@ if (buscaClienteAgenda) {
 }
 
 verificarSessao();
+
+async function salvarDespesa() {
+  const descricao = despesaDescricaoInput.value.trim();
+  const categoria = despesaCategoriaInput.value;
+  const valor = Number(despesaValorInput.value);
+  const data = despesaDataInput.value;
+
+  if (!descricao || !valor || !data) {
+    alert("Preencha todos os campos.");
+    return;
+  }
+
+  const despesa = {
+    descricao,
+    categoria,
+    valor,
+    data,
+  };
+
+  const despesaSalva = await salvarDespesaSupabase(despesa);
+
+  if (!despesaSalva) {
+    return;
+  }
+
+  despesas.push(despesaSalva);
+
+  renderizarDespesas();
+  atualizarResumoFinanceiro();
+
+  despesaDescricaoInput.value = "";
+  despesaValorInput.value = "";
+  despesaDataInput.value = "";
+}
+
+function renderizarDespesas() {
+  listaDespesas.innerHTML = "";
+
+  if (despesas.length === 0) {
+    listaDespesas.innerHTML = `
+      <div class="vazio">
+        Nenhuma despesa cadastrada.
+      </div>
+    `;
+    return;
+  }
+
+  despesas.forEach((despesa) => {
+    const item = document.createElement("div");
+
+    item.classList.add("despesa-item");
+
+    item.innerHTML = `
+  <div>
+    <strong>${despesa.descricao}</strong>
+    <small>${despesa.categoria}</small>
+  </div>
+
+  <div class="despesa-acoes">
+    <span>${formatarMoeda(despesa.valor)}</span>
+
+    <button
+      class="btn-small danger"
+      onclick="excluirDespesa(${despesa.id})"
+    >
+      Excluir
+    </button>
+  </div>
+`;
+
+    listaDespesas.appendChild(item);
+  });
+}
+
+async function excluirDespesa(id) {
+  const confirmar = confirm("Deseja excluir esta despesa?");
+
+  if (!confirmar) {
+    return;
+  }
+
+  const excluidoOnline = await excluirDespesaSupabase(id);
+
+  if (!excluidoOnline) {
+    return;
+  }
+
+  despesas = despesas.filter((despesa) => despesa.id !== id);
+
+  renderizarDespesas();
+  atualizarResumoFinanceiro();
+}
+
+btnSalvarDespesa.addEventListener("click", salvarDespesa);
+
+function carregarImagemBase64(caminho) {
+  return new Promise((resolve, reject) => {
+    const imagem = new Image();
+    imagem.crossOrigin = "anonymous";
+    imagem.src = caminho;
+
+    imagem.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = imagem.width;
+      canvas.height = imagem.height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(imagem, 0, 0);
+
+      resolve(canvas.toDataURL("image/png"));
+    };
+
+    imagem.onerror = reject;
+  });
+}
+
+async function gerarRelatorioPdf() {
+  alert("PDF iniciado");
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const logoBase64 = await carregarImagemBase64("./asset/logo-app.png");
+
+  const dataInicio = document.getElementById("pdfDataInicio")?.value;
+  const dataFim = document.getElementById("pdfDataFim")?.value;
+
+  const despesasFiltradas = despesas.filter((despesa) => {
+    if (!dataInicio && !dataFim) return true;
+
+    if (dataInicio && despesa.data < dataInicio) return false;
+    if (dataFim && despesa.data > dataFim) return false;
+
+    return true;
+  });
+
+  const totalDespesasPeriodo = despesasFiltradas.reduce((total, despesa) => {
+    return total + Number(despesa.valor || 0);
+  }, 0);
+
+  const agendamentosFiltrados = agendamentos.filter((agendamento) => {
+    if (agendamento.status !== "Atendido") return false;
+
+    if (!dataInicio && !dataFim) return true;
+
+    if (dataInicio && agendamento.data < dataInicio) return false;
+    if (dataFim && agendamento.data > dataFim) return false;
+
+    return true;
+  });
+
+  const totalReceitaPeriodo = agendamentosFiltrados.reduce(
+    (total, agendamento) => {
+      return total + Number(agendamento.valorTotal || 0);
+    },
+    0,
+  );
+
+  const lucroPeriodo = totalReceitaPeriodo - totalDespesasPeriodo;
+
+  const dataGerada = new Date().toLocaleDateString("pt-BR");
+
+  const receita = dashboardReceita.textContent;
+  const lucro = dashboardLucro.textContent;
+  const atendimentos = totalAtendimentosFinanceiro.textContent;
+  const ticketMedio = ticketMedioTexto.textContent;
+  const procedimentoMaisRealizado = procedimentoMaisRealizadoTexto.textContent;
+
+  const clientesRanking = {};
+
+agendamentosFiltrados.forEach((agendamento) => {
+  if (!clientesRanking[agendamento.cliente]) {
+    clientesRanking[agendamento.cliente] = {
+      quantidade: 0,
+      total: 0,
+    };
+  }
+
+  clientesRanking[agendamento.cliente].quantidade++;
+  clientesRanking[agendamento.cliente].total += agendamento.valorTotal;
+});
+
+const top5ClientesPdf = Object.entries(clientesRanking)
+  .sort((a, b) => b[1].total - a[1].total)
+  .slice(0, 5);
+
+  const maiorCliente = top5ClientesPdf[0];
+
+const totalClientesPeriodo = Object.keys(clientesRanking).length;
+
+const totalAtendimentosPeriodo = agendamentosFiltrados.length;
+
+  const rose = [183, 110, 121];
+  const gold = [212, 175, 55];
+  const dark = [43, 43, 43];
+  const gray = [120, 120, 120];
+  const light = [250, 247, 248];
+
+  // FUNÇÕES
+  function tituloSecao(texto, y) {
+    doc.setTextColor(...rose);
+    doc.setFontSize(13);
+    doc.text(texto, 20, y);
+
+    doc.setDrawColor(...gold);
+    doc.line(20, y + 3, 190, y + 3);
+  }
+
+  function card(titulo, valor, x, y, cor) {
+    doc.setFillColor(...light);
+    doc.roundedRect(x, y, 52, 34, 5, 5, "F");
+
+    doc.setTextColor(...gray);
+    doc.setFontSize(9);
+    doc.text(titulo, x + 5, y + 10);
+
+    doc.setTextColor(...cor);
+    doc.setFontSize(14);
+    doc.text(valor, x + 5, y + 24);
+  }
+
+  // TOPO PREMIUM
+  doc.setFillColor(...rose);
+  doc.rect(0, 0, 210, 42, "F");
+
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.6);
+  doc.line(20, 25, 90, 25);
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text("STUDIO MANAGER", 20, 18);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("RELATORIO FINANCEIRO", 20, 32);
+
+  // Logo
+  doc.setFillColor(255, 255, 255);
+  doc.circle(178, 21, 15, "F");
+
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.7);
+  doc.circle(178, 21, 16, "S");
+
+  doc.addImage(logoBase64, "PNG", 166, 9, 24, 24);
+
+  // TÍTULO
+  doc.setTextColor(...dark);
+  doc.setFontSize(18);
+  doc.text("Relatorio Financeiro", 20, 58);
+
+  doc.setTextColor(...gray);
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${dataGerada}`, 20, 66);
+
+  function formatarDataPdf(data) {
+    if (!data) return "";
+
+    return data.split("-").reverse().join("/");
+  }
+
+  const periodoTexto =
+    dataInicio || dataFim
+      ? `Período: ${formatarDataPdf(dataInicio) || "início"} até ${
+          formatarDataPdf(dataFim) || "hoje"
+        }`
+      : "Período: todos os registros";
+
+  doc.text(periodoTexto, 20, 72);
+
+  // CARDS
+  card("Receita", formatarMoeda(totalReceitaPeriodo), 20, 76, [46, 173, 107]);
+  card("Despesas", formatarMoeda(totalDespesasPeriodo), 79, 76, [217, 74, 74]);
+  card("Lucro", formatarMoeda(lucroPeriodo), 138, 76, rose);
+
+  // RESUMO
+  tituloSecao("Resumo do periodo", 126);
+
+  doc.setTextColor(...dark);
+  doc.setFontSize(11);
+  doc.text(`Atendimentos finalizados: ${atendimentos}`, 20, 140);
+  doc.text(`Ticket medio: ${ticketMedio}`, 20, 150);
+  doc.text(
+    `Procedimento mais realizado: ${procedimentoMaisRealizado}`,
+    20,
+    160,
+  );
+
+  // TOP CLIENTES
+tituloSecao("Top 5 Clientes", 175);
+
+let yClientes = 188;
+
+if (top5ClientesPdf.length === 0) {
+  doc.setTextColor(...gray);
+  doc.setFontSize(10);
+  doc.text("Nenhum cliente encontrado no período.", 20, yClientes);
+} else {
+  top5ClientesPdf.forEach(([nome, dados], index) => {
+    doc.setFillColor(248, 248, 248);
+    doc.roundedRect(20, yClientes - 6, 170, 12, 2, 2, "F");
+
+    doc.setTextColor(...dark);
+    doc.setFontSize(10);
+
+    doc.text(`${index + 1}. ${nome}`, 24, yClientes);
+
+    doc.setTextColor(...gray);
+    doc.text(`${dados.quantidade} atendimento(s)`, 100, yClientes);
+
+    doc.setTextColor(...rose);
+    doc.text(formatarMoeda(dados.total), 155, yClientes);
+
+    yClientes += 14;
+  });
+}
+
+  // DESPESAS
+  tituloSecao("Despesas cadastradas", yClientes + 10);
+
+  if (despesasFiltradas.length === 0) {
+    doc.setTextColor(...gray);
+    doc.setFontSize(10);
+    doc.text("Nenhuma despesa cadastrada.", 20, 194);
+  } else {
+    let y = yClientes + 24;
+
+    // Cabeçalho da tabela
+    doc.setFillColor(...rose);
+    doc.roundedRect(20, y - 8, 170, 12, 2, 2, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+
+    doc.text("DESCRIÇÃO", 24, y);
+    doc.text("CATEGORIA", 95, y);
+    doc.text("VALOR", 155, y);
+
+    y += 14;
+
+    despesasFiltradas.slice(0, 8).forEach((despesa, index) => {
+      // Linhas alternadas
+      if (index % 2 === 0) {
+        doc.setFillColor(248, 248, 248);
+      } else {
+        doc.setFillColor(255, 255, 255);
+      }
+
+      doc.rect(20, y - 8, 170, 12, "F");
+
+      doc.setFont("helvetica", "normal");
+
+      doc.setTextColor(...dark);
+      doc.setFontSize(9);
+
+      doc.text(String(despesa.descricao || "").substring(0, 35), 24, y);
+
+      doc.text(String(despesa.categoria || "").substring(0, 20), 95, y);
+
+      doc.setTextColor(217, 74, 74);
+
+      doc.text(formatarMoeda(Number(despesa.valor || 0)), 155, y);
+
+      y += 12;
+    });
+  }
+
+  // RODAPÉ
+  doc.setDrawColor(...gold);
+  doc.line(20, 276, 190, 276);
+
+  doc.setTextColor(...gray);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("Relatorio gerado automaticamente pelo Studio Manager", 20, 286);
+
+  doc.save("relatorio-financeiro-studio-manager.pdf");
+}
+
+if (btnGerarPdf) {
+  btnGerarPdf.addEventListener("click", gerarRelatorioPdf);
+}

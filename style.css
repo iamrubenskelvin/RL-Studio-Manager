@@ -1600,3 +1600,175 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     margin-left: 28px;
   }
 }
+
+.dashboard-caixa {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.caixa-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.05);
+}
+
+.caixa-card span {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.caixa-card strong {
+  display: block;
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: var(--title);
+}
+
+.caixa-card small {
+  color: #888;
+}
+
+.caixa-card.receita strong {
+  color: var(--success);
+}
+
+.caixa-card.despesa strong {
+  color: var(--danger);
+}
+
+.caixa-card.lucro {
+  background: linear-gradient(135deg, #fff7f8, #fffdf4);
+}
+
+.caixa-card.lucro strong {
+  color: var(--primary);
+}
+
+@media (max-width: 700px) {
+  .dashboard-caixa {
+    grid-template-columns: 1fr;
+  }
+
+  .caixa-card strong {
+    font-size: 24px;
+  }
+}
+
+.despesas-area {
+  margin-top: 28px;
+}
+
+.despesas-area .form-grid {
+  margin-top: 24px;
+  gap: 20px;
+}
+
+.despesas-area .field label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+#btn-salvar-despesa {
+  margin-top: 12px;
+  margin-bottom: 28px;
+}
+
+.lista-despesas-area {
+  margin-top: 12px;
+}
+
+.lista-despesas-area h3 {
+  margin-bottom: 16px;
+}
+
+.despesas-area .section-title {
+  margin-bottom: 20px;
+}
+
+#btn-salvar-despesa {
+  height: 56px;
+}
+
+.lista-despesas-area {
+  margin-top: 24px;
+}
+
+.despesa-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 14px 18px;
+  margin-bottom: 12px;
+
+  border: 1px solid var(--border);
+  border-radius: 18px;
+
+  background: #fafafa;
+}
+
+.despesa-item strong {
+  display: block;
+  color: var(--title);
+}
+
+.despesa-item small {
+  color: #888;
+}
+
+.despesa-item span {
+  color: #d9534f;
+  font-weight: 700;
+}
+
+.despesa-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.despesa-acoes span {
+  color: var(--danger);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .despesa-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .despesa-acoes {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.filtro-pdf {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+
+.filtro-pdf input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+.filtro-pdf button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #b76e79;
+  color: white;
+  cursor: pointer;
+}
