@@ -140,6 +140,13 @@
           Financeiro
         </button>
 
+        <button
+          class="menu-btn"
+          onclick="mostrarSecao('profissionais-section', this)"
+        >
+          Profissionais
+        </button>
+
         <button class="menu-btn" onclick="mostrarSecao('perfil-section', this)">
           Perfil
         </button>
@@ -179,6 +186,14 @@
             <div class="field">
               <label for="data">Data</label>
               <input id="data" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="profissional">Profissional</label>
+
+              <select id="profissional">
+                <option value="">Selecione a profissional</option>
+              </select>
             </div>
 
             <div class="field">
@@ -333,7 +348,6 @@
 
             <label>Até:</label>
             <input type="date" id="pdfDataFim" />
-
           </div>
 
           <button id="btn-gerar-pdf" class="btn-outline" type="button">
@@ -540,6 +554,47 @@
           <h2>Procedimentos cadastrados</h2>
 
           <div id="lista-procedimentos"></div>
+        </section>
+      </div>
+
+      <!-- PROFISSIONAIS -->
+
+      <div id="profissionais-section" class="app-section">
+        <section class="form-card">
+          <h2>Nova Profissional</h2>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Nome</label>
+              <input
+                type="text"
+                id="profissional-nome"
+                placeholder="Nome da profissional"
+              />
+            </div>
+
+            <div class="field">
+              <label>Telefone</label>
+              <input
+                type="text"
+                id="profissional-telefone"
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+          </div>
+
+          <button
+            id="btn-salvar-profissional"
+            class="btn-primary"
+            type="button"
+          >
+            Salvar profissional
+          </button>
+        </section>
+
+        <section class="agenda-card">
+          <h2>Profissionais cadastradas</h2>
+          <div id="lista-profissionais"></div>
         </section>
       </div>
 

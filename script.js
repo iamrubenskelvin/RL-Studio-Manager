@@ -9,6 +9,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 const clienteInput = document.querySelector("#cliente");
 const telefoneInput = document.querySelector("#telefone");
 const dataInput = document.querySelector("#data");
+const profissionalSelect = document.querySelector("#profissional");
 const horarioInput = document.querySelector("#horario");
 const pagamentoInput = document.querySelector("#pagamento");
 const statusInput = document.querySelector("#status");
@@ -80,6 +81,14 @@ const btnSalvarModal = document.querySelector("#btn-salvar-modal");
 const btnSalvarProcedimento = document.querySelector(
   "#btn-salvar-procedimento",
 );
+const profissionalNome = document.querySelector("#profissional-nome");
+const profissionalTelefone = document.querySelector("#profissional-telefone");
+
+const btnSalvarProfissional = document.querySelector(
+  "#btn-salvar-profissional",
+);
+
+const listaProfissionais = document.querySelector("#lista-profissionais");
 const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
 const btnCancelarSenha = document.querySelector("#btn-cancelar-senha");
 const btnSalvarSenha = document.querySelector("#btn-salvar-senha");
@@ -93,15 +102,13 @@ const hojePdf = new Date();
 const primeiroDiaMesPdf = new Date(
   hojePdf.getFullYear(),
   hojePdf.getMonth(),
-  1
+  1,
 );
 
 if (inputDataInicioPdf && inputDataFimPdf) {
   inputDataInicioPdf.value = primeiroDiaMesPdf.toISOString().split("T")[0];
   inputDataFimPdf.value = hojePdf.toISOString().split("T")[0];
 }
-
-
 
 const procedimentoNome = document.querySelector("#procedimento-nome");
 const procedimentoValor = document.querySelector("#procedimento-valor");
@@ -138,6 +145,7 @@ let idEditando = null;
 let idProcedimentoEditando = null;
 let filtroAtualAgenda = "Agendado";
 let valoresOcultos = false;
+let profissionais = [];
 
 btnRegister.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -194,6 +202,10 @@ btnLogin.addEventListener("click", async () => {
   await carregarProcedimentos();
   await carregarAgendamentosSupabase();
   await carregarDespesasSupabase();
+
+  profissionais = await carregarProfissionaisSupabase();
+  renderizarProfissionais();
+  carregarSelectProfissionais();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -315,6 +327,7 @@ async function salvarAgendamentoSupabase(agendamento) {
         cliente: agendamento.cliente,
         telefone: agendamento.telefone,
         data: agendamento.data,
+        profissional_id: Number(agendamento.profissionalId),
         horario_inicio: agendamento.horarioInicio,
         horario_fim: agendamento.horarioFim,
         pagamento: agendamento.pagamento,
@@ -343,6 +356,7 @@ async function atualizarAgendamentoSupabase(agendamento) {
       cliente: agendamento.cliente,
       telefone: agendamento.telefone,
       data: agendamento.data,
+      profissional_id: Number(agendamento.profissionalId),
       horario_inicio: agendamento.horarioInicio,
       horario_fim: agendamento.horarioFim,
       pagamento: agendamento.pagamento,
@@ -405,6 +419,82 @@ async function salvarDespesaSupabase(despesa) {
   return data;
 }
 
+async function salvarProfissionalSupabase(profissional) {
+  if (!usuarioLogado) {
+    alert("Usuário não logado.");
+    return null;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("profissionais")
+    .insert([
+      {
+        user_id: usuarioLogado.id,
+        nome: profissional.nome,
+        telefone: profissional.telefone,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao salvar profissional:", error);
+    alert("Erro ao salvar profissional.");
+    return null;
+  }
+
+  return data;
+}
+
+async function excluirProfissionalSupabase(id) {
+  const { error } = await supabaseClient
+    .from("profissionais")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", usuarioLogado.id);
+
+  if (error) {
+    console.error("Erro ao excluir profissional:", error);
+    alert("Erro ao excluir profissional.");
+    return false;
+  }
+
+  return true;
+}
+
+async function excluirProfissional(id) {
+  const confirmar = confirm("Deseja excluir esta profissional?");
+
+  if (!confirmar) return;
+
+  const excluido = await excluirProfissionalSupabase(id);
+
+  if (!excluido) return;
+
+  profissionais = profissionais.filter((profissional) => {
+    return profissional.id !== id;
+  });
+
+  renderizarProfissionais();
+  carregarSelectProfissionais();
+}
+
+async function carregarProfissionaisSupabase() {
+  if (!usuarioLogado) return [];
+
+  const { data, error } = await supabaseClient
+    .from("profissionais")
+    .select("*")
+    .order("nome");
+
+  if (error) {
+    console.error("Erro ao carregar profissionais:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 async function carregarDespesasSupabase() {
   if (!usuarioLogado) {
     return;
@@ -447,6 +537,36 @@ async function excluirDespesaSupabase(id) {
 
 function salvarAgendamentos() {
   localStorage.setItem("rl-agendamentos", JSON.stringify(agendamentos));
+}
+
+async function salvarProfissional() {
+  const nome = profissionalNome.value.trim();
+  const telefone = profissionalTelefone.value.trim();
+
+  if (!nome) {
+    alert("Informe o nome da profissional.");
+    return;
+  }
+
+  const profissional = {
+    nome,
+    telefone,
+  };
+
+  const profissionalSalva = await salvarProfissionalSupabase(profissional);
+
+  if (!profissionalSalva) {
+    return;
+  }
+
+  profissionais.push(profissionalSalva);
+  renderizarProfissionais();
+  carregarSelectProfissionais();
+
+  profissionalNome.value = "";
+  profissionalTelefone.value = "";
+
+  alert("Profissional salva com sucesso!");
 }
 
 function colocarDataDeHoje() {
@@ -509,6 +629,10 @@ function formatarTelefonePerfil(valor) {
 
 telefoneInput.addEventListener("input", () => {
   telefoneInput.value = formatarTelefone(telefoneInput.value);
+});
+
+profissionalTelefone.addEventListener("input", () => {
+  profissionalTelefone.value = formatarTelefone(profissionalTelefone.value);
 });
 
 clienteInput.addEventListener("input", () => {
@@ -751,6 +875,7 @@ async function salvarAgendamento() {
   const cliente = clienteInput.value.trim();
   const telefone = telefoneInput.value.trim();
   const data = dataInput.value;
+  const profissionalId = profissionalSelect.value;
   const horario = horarioInput.value;
   const pagamento = pagamentoInput.value;
   const status = statusInput.value;
@@ -758,8 +883,14 @@ async function salvarAgendamento() {
 
   const selecionados = pegarProcedimentosSelecionados();
 
-  if (cliente === "" || telefone === "" || data === "" || horario === "") {
-    alert("Preencha cliente, telefone, data e horário.");
+  if (
+    cliente === "" ||
+    telefone === "" ||
+    data === "" ||
+    profissionalId === "" ||
+    horario === ""
+  ) {
+    alert("Preencha cliente, telefone, data, profissional e horário.");
     return;
   }
 
@@ -792,11 +923,14 @@ async function salvarAgendamento() {
     empurrarAgendamentos(data, horario, duracaoTotal, idEditando);
   }
 
+  console.log("Profissional selecionada:", profissionalId);
+
   const agendamentoAtualizado = {
     id: idEditando || Date.now(),
     cliente,
     telefone,
     data,
+    profissionalId,
     horarioInicio: horario,
     horarioFim,
     procedimentos: selecionados,
@@ -1189,11 +1323,13 @@ async function carregarAgendamentosSupabase() {
     .order("data", { ascending: true })
     .order("horario_inicio", { ascending: true });
 
+
   if (error) {
     console.error("Erro ao carregar agendamentos:", error);
     alert("Erro ao carregar dados online.");
     return;
   }
+
 
   agendamentos = data.map((item) => {
     return {
@@ -1201,6 +1337,7 @@ async function carregarAgendamentosSupabase() {
       cliente: item.cliente,
       telefone: item.telefone,
       data: item.data,
+      profissionalId: item.profissional_id,
       horarioInicio: item.horario_inicio,
       horarioFim: item.horario_fim,
       pagamento: item.pagamento,
@@ -1214,6 +1351,61 @@ async function carregarAgendamentosSupabase() {
 
   salvarAgendamentos();
   renderizarAgenda();
+}
+
+function renderizarProfissionais() {
+  listaProfissionais.innerHTML = "";
+
+  if (profissionais.length === 0) {
+    listaProfissionais.innerHTML = `
+      <div class="vazio">
+        Nenhuma profissional cadastrada.
+      </div>
+    `;
+    return;
+  }
+
+  profissionais.forEach((profissional) => {
+    
+    const card = document.createElement("div");
+
+    card.classList.add("item-procedimento");
+
+    card.innerHTML = `
+  <div>
+    <strong>${profissional.nome}</strong>
+    <span>${profissional.telefone || "-"}</span>
+  </div>
+
+  <button
+    class="btn-excluir-profissional"
+    onclick="excluirProfissional(${profissional.id})"
+  >
+    🗑️
+  </button>
+`;
+
+    listaProfissionais.appendChild(card);
+  });
+}
+
+function carregarSelectProfissionais() {
+  if (!profissionalSelect) return;
+
+  profissionalSelect.innerHTML = `
+    <option value="">Selecione a profissional</option>
+  `;
+
+  profissionais.forEach((profissional) => {
+    profissionalSelect.innerHTML += `
+      <option value="${profissional.id}">
+        ${profissional.nome}
+      </option>
+    `;
+  });
+  if (profissionais.length === 1) {
+    profissionalSelect.value = profissionais[0].id;
+  }
 }
 
 function renderizarAgenda() {
@@ -1295,6 +1487,15 @@ function renderizarAgenda() {
       .map((procedimento) => procedimento.nome)
       .join(" + ");
 
+
+    const profissionalDoAgendamento = profissionais.find((profissional) => {
+  return profissional.id === Number(agendamento.profissionalId);
+});
+
+const nomeProfissional = profissionalDoAgendamento
+  ? profissionalDoAgendamento.nome
+  : "Profissional não informada";
+
     const card = document.createElement("div");
     card.classList.add("agendamento");
 
@@ -1311,6 +1512,7 @@ function renderizarAgenda() {
       </div>
 
       <p><strong>Data:</strong> ${agendamento.data}</p>
+      <p><strong>Profissional:</strong> ${nomeProfissional}</p>
       <p><strong>Horário:</strong> ${agendamento.horarioInicio} às ${agendamento.horarioFim}</p>
       <p><strong>Procedimentos:</strong> ${procedimentosTexto}</p>
       <p><strong>Pagamento:</strong> ${agendamento.pagamento}</p>
@@ -1946,6 +2148,10 @@ async function verificarSessao() {
     await carregarProcedimentos();
     await carregarAgendamentosSupabase();
     await carregarDespesasSupabase();
+
+    profissionais = await carregarProfissionaisSupabase();
+    renderizarProfissionais();
+    carregarSelectProfissionais();
   } else {
     usuarioLogado = null;
 
@@ -2364,8 +2570,6 @@ function carregarImagemBase64(caminho) {
 }
 
 async function gerarRelatorioPdf() {
-  alert("PDF iniciado");
-
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
@@ -2417,27 +2621,21 @@ async function gerarRelatorioPdf() {
 
   const clientesRanking = {};
 
-agendamentosFiltrados.forEach((agendamento) => {
-  if (!clientesRanking[agendamento.cliente]) {
-    clientesRanking[agendamento.cliente] = {
-      quantidade: 0,
-      total: 0,
-    };
-  }
+  agendamentosFiltrados.forEach((agendamento) => {
+    if (!clientesRanking[agendamento.cliente]) {
+      clientesRanking[agendamento.cliente] = {
+        quantidade: 0,
+        total: 0,
+      };
+    }
 
-  clientesRanking[agendamento.cliente].quantidade++;
-  clientesRanking[agendamento.cliente].total += agendamento.valorTotal;
-});
+    clientesRanking[agendamento.cliente].quantidade++;
+    clientesRanking[agendamento.cliente].total += agendamento.valorTotal;
+  });
 
-const top5ClientesPdf = Object.entries(clientesRanking)
-  .sort((a, b) => b[1].total - a[1].total)
-  .slice(0, 5);
-
-  const maiorCliente = top5ClientesPdf[0];
-
-const totalClientesPeriodo = Object.keys(clientesRanking).length;
-
-const totalAtendimentosPeriodo = agendamentosFiltrados.length;
+  const top5ClientesPdf = Object.entries(clientesRanking)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5);
 
   const rose = [183, 110, 121];
   const gold = [212, 175, 55];
@@ -2483,7 +2681,7 @@ const totalAtendimentosPeriodo = agendamentosFiltrados.length;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("RELATORIO FINANCEIRO", 20, 32);
+  doc.text("RELATORIO FINANCEIRO PROFISSIONAL", 20, 32);
 
   // Logo
   doc.setFillColor(255, 255, 255);
@@ -2538,33 +2736,32 @@ const totalAtendimentosPeriodo = agendamentosFiltrados.length;
   );
 
   // TOP CLIENTES
-tituloSecao("Top 5 Clientes", 175);
+  tituloSecao("Top 5 Clientes", 175);
 
-let yClientes = 188;
-
-if (top5ClientesPdf.length === 0) {
-  doc.setTextColor(...gray);
-  doc.setFontSize(10);
-  doc.text("Nenhum cliente encontrado no período.", 20, yClientes);
-} else {
-  top5ClientesPdf.forEach(([nome, dados], index) => {
-    doc.setFillColor(248, 248, 248);
-    doc.roundedRect(20, yClientes - 6, 170, 12, 2, 2, "F");
-
-    doc.setTextColor(...dark);
-    doc.setFontSize(10);
-
-    doc.text(`${index + 1}. ${nome}`, 24, yClientes);
-
+  let yClientes = 188;
+  if (top5ClientesPdf.length === 0) {
     doc.setTextColor(...gray);
-    doc.text(`${dados.quantidade} atendimento(s)`, 100, yClientes);
+    doc.setFontSize(10);
+    doc.text("Nenhum cliente encontrado no período.", 20, yClientes);
+  } else {
+    top5ClientesPdf.forEach(([nome, dados], index) => {
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(20, yClientes - 6, 170, 12, 2, 2, "F");
 
-    doc.setTextColor(...rose);
-    doc.text(formatarMoeda(dados.total), 155, yClientes);
+      doc.setTextColor(...dark);
+      doc.setFontSize(10);
 
-    yClientes += 14;
-  });
-}
+      doc.text(`${index + 1}. ${nome}`, 24, yClientes);
+
+      doc.setTextColor(...gray);
+      doc.text(`${dados.quantidade} atendimento(s)`, 100, yClientes);
+
+      doc.setTextColor(...rose);
+      doc.text(formatarMoeda(dados.total), 155, yClientes);
+
+      yClientes += 14;
+    });
+  }
 
   // DESPESAS
   tituloSecao("Despesas cadastradas", yClientes + 10);
@@ -2631,4 +2828,8 @@ if (top5ClientesPdf.length === 0) {
 
 if (btnGerarPdf) {
   btnGerarPdf.addEventListener("click", gerarRelatorioPdf);
+}
+
+if (btnSalvarProfissional) {
+  btnSalvarProfissional.addEventListener("click", salvarProfissional);
 }
