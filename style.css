@@ -1798,3 +1798,26 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   font-size: 18px;
 }
+
+#profissionais-section .form-grid {
+  margin-bottom: 18px;
+}
+
+#lista-profissionais {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#lista-profissionais .item-procedimento {
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profissional-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
