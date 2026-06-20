@@ -2023,11 +2023,12 @@ btnCancelarSenha.addEventListener("click", () => {
 });
 
 btnSalvarSenha.addEventListener("click", async () => {
+  const recuperandoSenha = window.location.href.includes("access_token");
   const senhaAtualDigitada = senhaAtual.value.trim();
   const senha = novaSenha.value.trim();
   const confirmar = confirmarSenha.value.trim();
 
-  if (!senhaAtualDigitada) {
+  if (!recuperandoSenha && !senhaAtualDigitada) {
     alert("Digite sua senha atual.");
     return;
   }
@@ -2042,15 +2043,17 @@ btnSalvarSenha.addEventListener("click", async () => {
     return;
   }
 
-  const { error: erroSenhaAtual } =
-    await supabaseClient.auth.signInWithPassword({
-      email: usuarioLogado.email,
-      password: senhaAtualDigitada,
-    });
+  if (!recuperandoSenha) {
+    const { error: erroSenhaAtual } =
+      await supabaseClient.auth.signInWithPassword({
+        email: usuarioLogado.email,
+        password: senhaAtualDigitada,
+      });
 
-  if (erroSenhaAtual) {
-    alert("Senha atual incorreta.");
-    return;
+    if (erroSenhaAtual) {
+      alert("Senha atual incorreta.");
+      return;
+    }
   }
 
   const { error } = await supabaseClient.auth.updateUser({
@@ -2452,6 +2455,18 @@ toggleConfirmarSenha.addEventListener("click", () => {
 if (buscaClienteAgenda) {
   buscaClienteAgenda.addEventListener("input", renderizarAgenda);
 }
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  console.log("EVENTO:", event);
+
+  if (event === "PASSWORD_RECOVERY") {
+    modalSenha.classList.remove("oculto");
+
+    senhaAtual.parentElement.style.display = "none";
+
+    alert("Digite sua nova senha.");
+  }
+});
 
 verificarSessao();
 
