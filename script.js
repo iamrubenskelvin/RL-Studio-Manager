@@ -2074,6 +2074,9 @@ btnSalvarSenha.addEventListener("click", async () => {
   modalSenha.classList.add("oculto");
 
   alert("Senha alterada com sucesso!");
+
+  modoRecuperacaoSenha = false;
+senhaAtual.parentElement.style.display = "block";
 });
 
 modalTelefone.addEventListener("input", () => {
