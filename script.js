@@ -214,6 +214,9 @@ btnLogin.addEventListener("click", async () => {
 btnGoogle.addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
+    options: {
+      redirectTo: "https://iamrubenskelvin.github.io/RL-Studio-Manager/",
+    },
   });
 
   if (error) {
