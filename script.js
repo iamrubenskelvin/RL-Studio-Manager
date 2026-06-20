@@ -146,6 +146,7 @@ let idProcedimentoEditando = null;
 let filtroAtualAgenda = "Agendado";
 let valoresOcultos = false;
 let profissionais = [];
+let modoRecuperacaoSenha = false;
 
 btnRegister.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -2023,7 +2024,7 @@ btnCancelarSenha.addEventListener("click", () => {
 });
 
 btnSalvarSenha.addEventListener("click", async () => {
-  const recuperandoSenha = window.location.href.includes("access_token");
+  const recuperandoSenha = modoRecuperacaoSenha;
   const senhaAtualDigitada = senhaAtual.value.trim();
   const senha = novaSenha.value.trim();
   const confirmar = confirmarSenha.value.trim();
@@ -2460,8 +2461,11 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   console.log("EVENTO:", event);
 
   if (event === "PASSWORD_RECOVERY") {
-    modalSenha.classList.remove("oculto");
+    console.log("MODO RECUPERAÇÃO ATIVADO");
 
+    modoRecuperacaoSenha = true;
+
+    modalSenha.classList.remove("oculto");
     senhaAtual.parentElement.style.display = "none";
 
     alert("Digite sua nova senha.");
