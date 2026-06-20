@@ -60,7 +60,7 @@
 
         <div class="auth-options">
           <label class="remember">
-            <input type="checkbox" />
+            <input type="checkbox" id="lembrar-me" />
             <span>Lembrar-me</span>
           </label>
 
@@ -350,6 +350,14 @@
             <input type="date" id="pdfDataFim" />
           </div>
 
+          <div class="filtro-pdf">
+            <label>Profissional:</label>
+
+            <select id="filtro-profissional-financeiro">
+              <option value="todos">Todos</option>
+            </select>
+          </div>
+
           <button id="btn-gerar-pdf" class="btn-outline" type="button">
             Gerar PDF
           </button>
@@ -449,6 +457,7 @@
               <label for="despesa-categoria">Categoria</label>
               <select id="despesa-categoria">
                 <option value="Produto">Produto</option>
+                <option value="Transporte">Transporte</option>
                 <option value="Aluguel">Aluguel</option>
                 <option value="Energia">Energia</option>
                 <option value="Internet">Internet</option>
@@ -551,7 +560,17 @@
         </section>
 
         <section class="agenda-card">
-          <h2>Procedimentos cadastrados</h2>
+          <div class="section-title">
+            <h2>Procedimentos cadastrados</h2>
+
+            <button
+              id="btn-organizar-procedimentos"
+              class="btn-outline"
+              type="button"
+            >
+              Organizar
+            </button>
+          </div>
 
           <div id="lista-procedimentos"></div>
         </section>

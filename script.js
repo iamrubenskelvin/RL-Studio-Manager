@@ -4,7 +4,14 @@ const SUPABASE_KEY = "sb_publishable_NILNEZZRUtdVgDLqsbwlOg_WGCBDlNy";
 
 const { createClient } = supabase;
 
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  },
+});
 
 const clienteInput = document.querySelector("#cliente");
 const telefoneInput = document.querySelector("#telefone");
@@ -52,6 +59,7 @@ const authContainer = document.querySelector("#auth-container");
 const app = document.querySelector("#app");
 const authEmail = document.querySelector("#auth-email");
 const authPassword = document.querySelector("#auth-password");
+const lembrarMe = document.querySelector("#lembrar-me");
 
 const perfilEmail = document.querySelector("#perfil-email");
 const perfilLogo = document.querySelector("#perfil-logo");
@@ -87,6 +95,9 @@ const profissionalTelefone = document.querySelector("#profissional-telefone");
 const btnSalvarProfissional = document.querySelector(
   "#btn-salvar-profissional",
 );
+const filtroProfissionalFinanceiro = document.querySelector(
+  "#filtro-profissional-financeiro",
+);
 
 const listaProfissionais = document.querySelector("#lista-profissionais");
 const btnAlterarSenha = document.querySelector("#btn-alterar-senha");
@@ -115,6 +126,9 @@ const procedimentoValor = document.querySelector("#procedimento-valor");
 const procedimentoDuracao = document.querySelector("#procedimento-duracao");
 
 const listaProcedimentos = document.querySelector("#lista-procedimentos");
+const btnOrganizarProcedimentos = document.querySelector(
+  "#btn-organizar-procedimentos",
+);
 const listaHistorico = document.querySelector("#lista-historico");
 
 const modalSenha = document.querySelector("#modal-senha");
@@ -147,6 +161,7 @@ let filtroAtualAgenda = "Agendado";
 let valoresOcultos = false;
 let profissionais = [];
 let modoRecuperacaoSenha = false;
+let organizandoProcedimentos = false;
 
 btnRegister.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -196,6 +211,12 @@ btnLogin.addEventListener("click", async () => {
 
   usuarioLogado = data.user;
 
+  if (lembrarMe && lembrarMe.checked) {
+    localStorage.setItem("rl-lembrar-email", email);
+  } else {
+    localStorage.removeItem("rl-lembrar-email");
+  }
+
   authContainer.style.display = "none";
   app.style.display = "block";
 
@@ -207,6 +228,7 @@ btnLogin.addEventListener("click", async () => {
   profissionais = await carregarProfissionaisSupabase();
   renderizarProfissionais();
   carregarSelectProfissionais();
+  carregarFiltroProfissionalFinanceiro();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -243,6 +265,16 @@ btnForgotPassword.addEventListener("click", async () => {
   }
 
   alert("Enviamos um link de recuperação para seu e-mail.");
+});
+
+btnOrganizarProcedimentos.addEventListener("click", () => {
+  organizandoProcedimentos = !organizandoProcedimentos;
+
+  btnOrganizarProcedimentos.textContent = organizandoProcedimentos
+    ? "Concluir"
+    : "Organizar";
+
+  carregarProcedimentos();
 });
 
 btnTogglePassword.addEventListener("click", () => {
@@ -483,6 +515,7 @@ async function excluirProfissional(id) {
 
   renderizarProfissionais();
   carregarSelectProfissionais();
+  carregarFiltroProfissionalFinanceiro();
 }
 
 async function carregarProfissionaisSupabase() {
@@ -568,6 +601,7 @@ async function salvarProfissional() {
   profissionais.push(profissionalSalva);
   renderizarProfissionais();
   carregarSelectProfissionais();
+  carregarFiltroProfissionalFinanceiro();
 
   profissionalNome.value = "";
   profissionalTelefone.value = "";
@@ -790,6 +824,41 @@ function calcularHorarioFim(horarioInicio, duracaoTotal) {
   return `${horaFim}:${minutoFim}`;
 }
 
+function definirProximoHorarioDisponivel() {
+  const dataSelecionada = dataInput.value;
+
+  if (!dataSelecionada) {
+    horarioInput.value = "08:00";
+    return;
+  }
+
+  const agendamentosDoDia = agendamentos
+    .filter((agendamento) => {
+      return (
+        agendamento.data === dataSelecionada &&
+        agendamento.status !== "Cancelado"
+      );
+    })
+    .sort((a, b) => {
+      return (
+        converterHorarioParaMinutos(a.horarioFim) -
+        converterHorarioParaMinutos(b.horarioFim)
+      );
+    });
+
+  if (agendamentosDoDia.length === 0) {
+    horarioInput.value = "08:00";
+    return;
+  }
+
+  const ultimoAgendamento = agendamentosDoDia[agendamentosDoDia.length - 1];
+
+  const proximoMinuto =
+    converterHorarioParaMinutos(ultimoAgendamento.horarioFim) + 1;
+
+  horarioInput.value = converterMinutosParaHorario(proximoMinuto);
+}
+
 function limparFormulario() {
   clienteInput.value = "";
   telefoneInput.value = "";
@@ -808,6 +877,7 @@ function limparFormulario() {
 
   colocarDataDeHoje();
   atualizarResumoProcedimentos();
+  definirProximoHorarioDisponivel();
 }
 
 function converterHorarioParaMinutos(horario) {
@@ -1355,6 +1425,7 @@ async function carregarAgendamentosSupabase() {
 
   salvarAgendamentos();
   renderizarAgenda();
+  definirProximoHorarioDisponivel();
 }
 
 function renderizarProfissionais() {
@@ -1409,6 +1480,22 @@ function carregarSelectProfissionais() {
   if (profissionais.length === 1) {
     profissionalSelect.value = profissionais[0].id;
   }
+}
+
+function carregarFiltroProfissionalFinanceiro() {
+  if (!filtroProfissionalFinanceiro) return;
+
+  filtroProfissionalFinanceiro.innerHTML = `
+    <option value="todos">Todos</option>
+  `;
+
+  profissionais.forEach((profissional) => {
+    filtroProfissionalFinanceiro.innerHTML += `
+      <option value="${profissional.id}">
+        ${profissional.nome}
+      </option>
+    `;
+  });
 }
 
 function renderizarAgenda() {
@@ -1682,8 +1769,20 @@ function renderizarHistoricoFinanceiro() {
 
   historicoFinanceiro.innerHTML = "";
 
+  const profissionalSelecionada =
+    filtroProfissionalFinanceiro?.value || "todos";
+
   const atendidos = agendamentos
-    .filter((agendamento) => agendamento.status === "Atendido")
+    .filter((agendamento) => {
+      const statusValido = agendamento.status === "Atendido";
+
+      const profissionalValida =
+        profissionalSelecionada === "todos" ||
+        Number(agendamento.profissionalId) === Number(profissionalSelecionada);
+
+      return statusValido && profissionalValida;
+    })
+
     .sort((a, b) => {
       return (
         new Date(`${b.data}T${b.horarioInicio}`) -
@@ -1764,8 +1863,17 @@ function atualizarResumoFinanceiro() {
 
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
+  const profissionalSelecionada =
+    filtroProfissionalFinanceiro?.value || "todos";
+
   const atendidos = agendamentos.filter((agendamento) => {
-    return agendamento.status === "Atendido";
+    const statusValido = agendamento.status === "Atendido";
+
+    const profissionalValida =
+      profissionalSelecionada === "todos" ||
+      Number(agendamento.profissionalId) === Number(profissionalSelecionada);
+
+    return statusValido && profissionalValida;
   });
 
   const totalHoje = atendidos
@@ -1939,8 +2047,12 @@ btnLimpar.addEventListener("click", () => {
 colocarDataDeHoje();
 renderizarCalendarioVisual();
 atualizarResumoProcedimentos();
+definirProximoHorarioDisponivel();
 
-dataInput.addEventListener("change", renderizarCalendarioVisual);
+dataInput.addEventListener("change", () => {
+  renderizarCalendarioVisual();
+  definirProximoHorarioDisponivel();
+});
 
 document.addEventListener("click", (event) => {
   const clicouNoCampoCliente = clienteInput.contains(event.target);
@@ -2076,7 +2188,7 @@ btnSalvarSenha.addEventListener("click", async () => {
   alert("Senha alterada com sucesso!");
 
   modoRecuperacaoSenha = false;
-senhaAtual.parentElement.style.display = "block";
+  senhaAtual.parentElement.style.display = "block";
 });
 
 modalTelefone.addEventListener("input", () => {
@@ -2160,6 +2272,7 @@ async function verificarSessao() {
     profissionais = await carregarProfissionaisSupabase();
     renderizarProfissionais();
     carregarSelectProfissionais();
+    carregarFiltroProfissionalFinanceiro();
   } else {
     usuarioLogado = null;
 
@@ -2331,13 +2444,63 @@ async function salvarProcedimento() {
   await carregarProcedimentos();
 }
 
+async function moverProcedimento(id, direcao) {
+  const { data, error } = await supabaseClient
+    .from("procedimentos")
+    .select("*")
+    .order("ordem", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const indiceAtual = data.findIndex((item) => item.id === id);
+
+  if (indiceAtual === -1) return;
+
+  const indiceDestino = direcao === "subir" ? indiceAtual - 1 : indiceAtual + 1;
+
+  if (indiceDestino < 0 || indiceDestino >= data.length) {
+    return;
+  }
+
+  const atual = data[indiceAtual];
+  const destino = data[indiceDestino];
+
+  const ordemAtual = atual.ordem;
+  const ordemDestino = destino.ordem;
+
+  const { error: erro1 } = await supabaseClient
+    .from("procedimentos")
+    .update({ ordem: ordemDestino })
+    .eq("id", atual.id);
+
+  if (erro1) {
+    console.error(erro1);
+    return;
+  }
+
+  const { error: erro2 } = await supabaseClient
+    .from("procedimentos")
+    .update({ ordem: ordemAtual })
+    .eq("id", destino.id);
+
+  if (erro2) {
+    console.error(erro2);
+    return;
+  }
+
+  carregarProcedimentos();
+}
+
 async function carregarProcedimentos() {
   if (!usuarioLogado) return;
 
   const { data, error } = await supabaseClient
     .from("procedimentos")
     .select("*")
-    .order("nome");
+    .order("ordem", { ascending: true });
 
   if (error) {
     console.error(error);
@@ -2350,6 +2513,7 @@ async function carregarProcedimentos() {
       nome: item.nome,
       valor: Number(item.valor),
       duracao: Number(item.duracao),
+      ordem: item.ordem,
     };
   });
 
@@ -2376,6 +2540,26 @@ async function carregarProcedimentos() {
         </div>
 
         <div class="acoes">
+          ${
+            organizandoProcedimentos
+              ? `
+      <button
+        class="btn-small"
+        onclick="moverProcedimento(${procedimento.id}, 'subir')"
+      >
+        ⬆️
+      </button>
+
+      <button
+        class="btn-small"
+        onclick="moverProcedimento(${procedimento.id}, 'descer')"
+      >
+        ⬇️
+      </button>
+    `
+              : ""
+          }
+
           <button
             class="btn-small edit"
             onclick="editarProcedimento(${procedimento.id})"
@@ -2460,6 +2644,14 @@ if (buscaClienteAgenda) {
   buscaClienteAgenda.addEventListener("input", renderizarAgenda);
 }
 
+if (filtroProfissionalFinanceiro) {
+  filtroProfissionalFinanceiro.addEventListener("change", () => {
+    atualizarResumoFinanceiro();
+    renderizarHistoricoFinanceiro();
+    atualizarCards();
+  });
+}
+
 supabaseClient.auth.onAuthStateChange((event, session) => {
   console.log("EVENTO:", event);
 
@@ -2474,6 +2666,16 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     alert("Digite sua nova senha.");
   }
 });
+
+const emailSalvo = localStorage.getItem("rl-lembrar-email");
+
+if (emailSalvo && authEmail) {
+  authEmail.value = emailSalvo;
+
+  if (lembrarMe) {
+    lembrarMe.checked = true;
+  }
+}
 
 verificarSessao();
 
