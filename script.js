@@ -229,7 +229,9 @@ btnForgotPassword.addEventListener("click", async () => {
     return;
   }
 
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://iamrubenskelvin.github.io/RL-Studio-Manager/",
+  });
 
   if (error) {
     alert(error.message);
@@ -1323,13 +1325,11 @@ async function carregarAgendamentosSupabase() {
     .order("data", { ascending: true })
     .order("horario_inicio", { ascending: true });
 
-
   if (error) {
     console.error("Erro ao carregar agendamentos:", error);
     alert("Erro ao carregar dados online.");
     return;
   }
-
 
   agendamentos = data.map((item) => {
     return {
@@ -1366,7 +1366,6 @@ function renderizarProfissionais() {
   }
 
   profissionais.forEach((profissional) => {
-    
     const card = document.createElement("div");
 
     card.classList.add("item-procedimento");
@@ -1487,14 +1486,13 @@ function renderizarAgenda() {
       .map((procedimento) => procedimento.nome)
       .join(" + ");
 
-
     const profissionalDoAgendamento = profissionais.find((profissional) => {
-  return profissional.id === Number(agendamento.profissionalId);
-});
+      return profissional.id === Number(agendamento.profissionalId);
+    });
 
-const nomeProfissional = profissionalDoAgendamento
-  ? profissionalDoAgendamento.nome
-  : "Profissional não informada";
+    const nomeProfissional = profissionalDoAgendamento
+      ? profissionalDoAgendamento.nome
+      : "Profissional não informada";
 
     const card = document.createElement("div");
     card.classList.add("agendamento");
