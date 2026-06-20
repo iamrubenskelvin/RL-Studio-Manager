@@ -144,11 +144,14 @@ const toggleConfirmarSenha = document.querySelector("#toggle-confirmar-senha");
 const dashboardReceita = document.querySelector("#dashboard-receita");
 const dashboardDespesas = document.querySelector("#dashboard-despesas");
 const dashboardLucro = document.querySelector("#dashboard-lucro");
+const listaDespesas = document.querySelector("#lista-despesas");
 const despesaDescricaoInput = document.querySelector("#despesa-descricao");
 const despesaCategoriaInput = document.querySelector("#despesa-categoria");
 const despesaValorInput = document.querySelector("#despesa-valor");
 const despesaDataInput = document.querySelector("#despesa-data");
-const listaDespesas = document.querySelector("#lista-despesas");
+const despesaProfissionalInput = document.querySelector(
+  "#despesa-profissional",
+);
 
 let despesas = [];
 
@@ -226,9 +229,11 @@ btnLogin.addEventListener("click", async () => {
   await carregarDespesasSupabase();
 
   profissionais = await carregarProfissionaisSupabase();
+
   renderizarProfissionais();
   carregarSelectProfissionais();
   carregarFiltroProfissionalFinanceiro();
+  carregarSelectDespesaProfissional();
 
   btnLogin.innerHTML = "Entrar";
   btnLogin.disabled = false;
@@ -444,6 +449,10 @@ async function salvarDespesaSupabase(despesa) {
         categoria: despesa.categoria,
         valor: despesa.valor,
         data: despesa.data,
+        profissional_id:
+  despesa.profissionalId === "studio"
+    ? null
+    : Number(despesa.profissionalId),
       },
     ])
     .select()
@@ -516,6 +525,7 @@ async function excluirProfissional(id) {
   renderizarProfissionais();
   carregarSelectProfissionais();
   carregarFiltroProfissionalFinanceiro();
+  carregarSelectDespesaProfissional();
 }
 
 async function carregarProfissionaisSupabase() {
@@ -550,14 +560,15 @@ async function carregarDespesasSupabase() {
   }
 
   despesas = data.map((item) => {
-    return {
-      id: item.id,
-      descricao: item.descricao,
-      categoria: item.categoria,
-      valor: Number(item.valor),
-      data: item.data,
-    };
-  });
+  return {
+    id: item.id,
+    descricao: item.descricao,
+    categoria: item.categoria,
+    valor: Number(item.valor),
+    data: item.data,
+    profissionalId: item.profissional_id,
+  };
+});
 
   renderizarDespesas();
   atualizarResumoFinanceiro();
@@ -599,9 +610,11 @@ async function salvarProfissional() {
   }
 
   profissionais.push(profissionalSalva);
+
   renderizarProfissionais();
   carregarSelectProfissionais();
   carregarFiltroProfissionalFinanceiro();
+  carregarSelectDespesaProfissional();
 
   profissionalNome.value = "";
   profissionalTelefone.value = "";
@@ -1498,6 +1511,22 @@ function carregarFiltroProfissionalFinanceiro() {
   });
 }
 
+function carregarSelectDespesaProfissional() {
+  if (!despesaProfissionalInput) return;
+
+  despesaProfissionalInput.innerHTML = `
+    <option value="studio">Studio / Geral</option>
+  `;
+
+  profissionais.forEach((profissional) => {
+    despesaProfissionalInput.innerHTML += `
+      <option value="${profissional.id}">
+        ${profissional.nome}
+      </option>
+    `;
+  });
+}
+
 function renderizarAgenda() {
   listaAgenda.innerHTML = "";
 
@@ -1946,11 +1975,18 @@ function atualizarResumoFinanceiro() {
   financeiroMesTexto.innerHTML = valorFinanceiro(totalMes);
 
   const despesasMes = despesas
-    .filter((despesa) => {
-      const dataDespesa = new Date(`${despesa.data}T00:00:00`);
-      return dataDespesa >= inicioMes && dataDespesa <= hoje;
-    })
-    .reduce((total, despesa) => total + despesa.valor, 0);
+  .filter((despesa) => {
+    const dataDespesa = new Date(`${despesa.data}T00:00:00`);
+
+    const dataValida = dataDespesa >= inicioMes && dataDespesa <= hoje;
+
+    const profissionalValida =
+      profissionalSelecionada === "todos" ||
+      Number(despesa.profissionalId) === Number(profissionalSelecionada);
+
+    return dataValida && profissionalValida;
+  })
+  .reduce((total, despesa) => total + despesa.valor, 0);
 
   const lucroMes = totalMes - despesasMes;
 
@@ -2003,19 +2039,36 @@ function atualizarResumoFinanceiro() {
 }
 
 function atualizarCards() {
-  const totalAgendamentos = agendamentos.length;
+  const profissionalSelecionada =
+    filtroProfissionalFinanceiro?.value || "todos";
 
-  const totalPrevisto = agendamentos
+  const agendamentosFiltrados = agendamentos.filter((agendamento) => {
+    return (
+      profissionalSelecionada === "todos" ||
+      Number(agendamento.profissionalId) === Number(profissionalSelecionada)
+    );
+  });
+
+  const totalAgendamentos = agendamentosFiltrados.length;
+
+  const totalPrevisto = agendamentosFiltrados
     .filter((agendamento) => {
       return (
-        agendamento.status === "Agendado" || agendamento.status === "Confirmado"
+        agendamento.status === "Agendado" ||
+        agendamento.status === "Confirmado"
       );
     })
-    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
+    .reduce((total, agendamento) => {
+      return total + agendamento.valorTotal;
+    }, 0);
 
-  const totalFinanceiro = agendamentos
-    .filter((agendamento) => agendamento.status === "Atendido")
-    .reduce((total, agendamento) => total + agendamento.valorTotal, 0);
+  const totalFinanceiro = agendamentosFiltrados
+    .filter((agendamento) => {
+      return agendamento.status === "Atendido";
+    })
+    .reduce((total, agendamento) => {
+      return total + agendamento.valorTotal;
+    }, 0);
 
   if (totalAgendamentosTexto) {
     totalAgendamentosTexto.innerHTML = totalAgendamentos;
@@ -2270,9 +2323,11 @@ async function verificarSessao() {
     await carregarDespesasSupabase();
 
     profissionais = await carregarProfissionaisSupabase();
+
     renderizarProfissionais();
     carregarSelectProfissionais();
     carregarFiltroProfissionalFinanceiro();
+    carregarSelectDespesaProfissional();
   } else {
     usuarioLogado = null;
 
@@ -2682,6 +2737,7 @@ verificarSessao();
 async function salvarDespesa() {
   const descricao = despesaDescricaoInput.value.trim();
   const categoria = despesaCategoriaInput.value;
+  const profissionalId = despesaProfissionalInput.value;
   const valor = Number(despesaValorInput.value);
   const data = despesaDataInput.value;
 
@@ -2691,11 +2747,12 @@ async function salvarDespesa() {
   }
 
   const despesa = {
-    descricao,
-    categoria,
-    valor,
-    data,
-  };
+  descricao,
+  categoria,
+  valor,
+  data,
+  profissionalId,
+};
 
   const despesaSalva = await salvarDespesaSupabase(despesa);
 
@@ -2711,6 +2768,7 @@ async function salvarDespesa() {
   despesaDescricaoInput.value = "";
   despesaValorInput.value = "";
   despesaDataInput.value = "";
+  despesaProfissionalInput.value = "studio";
 }
 
 function renderizarDespesas() {
