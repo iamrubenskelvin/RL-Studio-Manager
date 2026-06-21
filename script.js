@@ -2994,8 +2994,8 @@ async function gerarRelatorioPdf() {
   // INFORMAÇÕES
   doc.setTextColor(...dark);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.text("Resumo financeiro", 20, 65);
+  doc.setFontSize(20);
+  doc.text("Resumo Financeiro", 20, 65);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
@@ -3035,7 +3035,7 @@ async function gerarRelatorioPdf() {
   // CAIXA DE RESUMO
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(...gold);
-  doc.roundedRect(20, 172, 170, 54, 5, 5, "FD");
+  doc.roundedRect(20, 172, 170, 60, 5, 5, "FD");
 
   doc.setTextColor(...rose);
   doc.setFont("helvetica", "bold");
@@ -3047,20 +3047,12 @@ async function gerarRelatorioPdf() {
   doc.setFontSize(10);
 
   doc.text(`Atendimentos realizados: ${agendamentosFiltrados.length}`, 28, 200);
-  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 211);
-  doc.text(
-    `Procedimento mais realizado: ${procedimentoMaisRealizadoPdf}`,
-    28,
-    222,
-  );
 
-  doc.text(
-    `Quantidade do procedimento: ${quantidadeProcedimentoPdf}`,
-    110,
-    200,
-  );
+  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 212);
 
-  doc.text(`Lucro do período: ${formatarMoeda(lucroPeriodo)}`, 110, 211);
+  doc.text(`Procedimento campeão: ${procedimentoMaisRealizadoPdf}`, 28, 224);
+
+  doc.text(`Lucro do período: ${formatarMoeda(lucroPeriodo)}`, 110, 200);
 
   // RODAPÉ
   doc.setDrawColor(...gold);
@@ -3069,7 +3061,7 @@ async function gerarRelatorioPdf() {
   doc.setTextColor(...gray);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Studio Manager • Relatório gerado automaticamente", 20, 262);
+  doc.text("RL Studio Manager • Relatório Financeiro Executivo", 20, 262);
 
   doc.save("relatorio-financeiro-studio-manager.pdf");
 }
