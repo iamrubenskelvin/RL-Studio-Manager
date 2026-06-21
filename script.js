@@ -165,6 +165,7 @@ let valoresOcultos = false;
 let profissionais = [];
 let modoRecuperacaoSenha = false;
 let organizandoProcedimentos = false;
+let idProfissionalEditando = null;
 
 btnRegister.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -181,11 +182,15 @@ btnRegister.addEventListener("click", async () => {
   });
 
   if (error) {
-    alert(error.message);
+    tratarErroSupabase(error, "Erro ao criar conta. Tente novamente.");
     return;
   }
 
-  alert("Conta criada com sucesso!");
+  alert(
+    "Conta criada com sucesso!\n\n" +
+      "Enviamos um e-mail de confirmação para o endereço informado.\n\n" +
+      "Antes de acessar o Studio Manager, confirme seu e-mail através do link enviado.",
+  );
 });
 
 btnLogin.addEventListener("click", async () => {
@@ -200,17 +205,22 @@ btnLogin.addEventListener("click", async () => {
   btnLogin.innerHTML = "Entrando...";
   btnLogin.disabled = true;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
-  });
+ const { data, error } = await supabaseClient.auth.signInWithPassword({
+  email,
+  password,
+});
 
-  if (error) {
-    btnLogin.innerHTML = "Entrar";
-    btnLogin.disabled = false;
-    alert(error.message);
-    return;
-  }
+if (error) {
+  btnLogin.innerHTML = "Entrar";
+  btnLogin.disabled = false;
+
+  tratarErroSupabase(
+    error,
+    "E-mail ou senha incorretos."
+  );
+
+  return;
+}
 
   usuarioLogado = data.user;
 
@@ -248,7 +258,8 @@ btnGoogle.addEventListener("click", async () => {
   });
 
   if (error) {
-    alert(error.message);
+    tratarErroSupabase(error, "Erro ao entrar com Google.");
+    return;
   }
 });
 
@@ -265,7 +276,7 @@ btnForgotPassword.addEventListener("click", async () => {
   });
 
   if (error) {
-    alert(error.message);
+    tratarErroSupabase(error, "Erro ao enviar recuperação de senha.");
     return;
   }
 
@@ -327,6 +338,35 @@ function formatarMoeda(valor) {
   });
 }
 
+function tratarErroSupabase(error, mensagemPadrao = "Ocorreu um erro. Tente novamente.") {
+  console.error(error);
+
+  const mensagem = error?.message || "";
+
+  if (mensagem.includes("Email not confirmed")) {
+    alert(
+      "Seu e-mail ainda não foi confirmado.\n\n" +
+        "Verifique sua caixa de entrada e clique no link de confirmação.",
+    );
+    return;
+  }
+
+  if (mensagem.includes("User already registered")) {
+    alert("Este e-mail já possui uma conta cadastrada.");
+    return;
+  }
+
+  if (mensagem.includes("rate limit") || mensagem.includes("Too Many Requests")) {
+    alert(
+      "Muitas tentativas realizadas.\n\n" +
+        "Aguarde alguns minutos e tente novamente.",
+    );
+    return;
+  }
+
+  alert(mensagemPadrao);
+}
+
 function salvarClientes() {
   localStorage.setItem("rl-clientes", JSON.stringify(clientes));
 }
@@ -386,8 +426,7 @@ async function salvarAgendamentoSupabase(agendamento) {
     .select();
 
   if (error) {
-    console.error("Erro ao salvar no Supabase:", error);
-    alert("Erro ao salvar online. Veja o console.");
+    tratarErroSupabase(error, "Erro ao salvar agendamento.");
     return null;
   }
 
@@ -414,8 +453,7 @@ async function atualizarAgendamentoSupabase(agendamento) {
     .eq("id", agendamento.id);
 
   if (error) {
-    console.error("Erro ao atualizar:", error);
-    alert("Erro ao atualizar no Supabase.");
+    tratarErroSupabase(error, "Erro ao atualizar agendamento.");
     return false;
   }
 
@@ -429,8 +467,7 @@ async function excluirAgendamentoSupabase(id) {
     .eq("id", id);
 
   if (error) {
-    console.error("Erro ao excluir:", error);
-    alert("Erro ao excluir no Supabase.");
+    tratarErroSupabase(error, "Erro ao excluir agendamento.");
     return false;
   }
 
@@ -495,6 +532,45 @@ async function salvarProfissionalSupabase(profissional) {
   return data;
 }
 
+async function atualizarProfissionalSupabase(profissional) {
+  const { data, error } = await supabaseClient
+    .from("profissionais")
+    .update({
+      nome: profissional.nome,
+      telefone: profissional.telefone,
+    })
+    .eq("id", profissional.id)
+    .eq("user_id", usuarioLogado.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao atualizar profissional:", error);
+    alert("Erro ao atualizar profissional.");
+    return null;
+  }
+
+  return data;
+}
+
+function editarProfissional(id) {
+  const profissional = profissionais.find((item) => {
+    return item.id === id;
+  });
+
+  if (!profissional) {
+    return;
+  }
+
+  idProfissionalEditando = id;
+
+  profissionalNome.value = profissional.nome;
+  profissionalTelefone.value = profissional.telefone || "";
+
+  btnSalvarProfissional.innerHTML = "Salvar alterações";
+  profissionalNome.focus();
+}
+
 async function excluirProfissionalSupabase(id) {
   const { error } = await supabaseClient
     .from("profissionais")
@@ -512,6 +588,25 @@ async function excluirProfissionalSupabase(id) {
 }
 
 async function excluirProfissional(id) {
+  const agendamentosVinculados = agendamentos.filter((agendamento) => {
+    return Number(agendamento.profissionalId) === Number(id);
+  });
+
+  const despesasVinculadas = despesas.filter((despesa) => {
+    return Number(despesa.profissionalId) === Number(id);
+  });
+
+  if (agendamentosVinculados.length > 0 || despesasVinculadas.length > 0) {
+    alert(
+      `Não é possível excluir esta profissional.\n\n` +
+        `Existem registros vinculados:\n` +
+        `• ${agendamentosVinculados.length} agendamento(s)\n` +
+        `• ${despesasVinculadas.length} despesa(s)\n\n` +
+        `Para proteger o histórico financeiro, edite ou remova esses registros antes de excluir.`,
+    );
+    return;
+  }
+
   const confirmar = confirm("Deseja excluir esta profissional?");
 
   if (!confirmar) return;
@@ -528,6 +623,8 @@ async function excluirProfissional(id) {
   carregarSelectProfissionais();
   carregarFiltroProfissionalFinanceiro();
   carregarSelectDespesaProfissional();
+
+  alert("Profissional excluída com sucesso!");
 }
 
 async function carregarProfissionaisSupabase() {
@@ -601,17 +698,35 @@ async function salvarProfissional() {
   }
 
   const profissional = {
+    id: idProfissionalEditando,
     nome,
     telefone,
   };
 
-  const profissionalSalva = await salvarProfissionalSupabase(profissional);
+  let profissionalSalva = null;
 
-  if (!profissionalSalva) {
-    return;
+  if (idProfissionalEditando) {
+    profissionalSalva = await atualizarProfissionalSupabase(profissional);
+
+    if (!profissionalSalva) return;
+
+    profissionais = profissionais.map((item) => {
+      if (item.id === idProfissionalEditando) {
+        return profissionalSalva;
+      }
+
+      return item;
+    });
+
+    idProfissionalEditando = null;
+    btnSalvarProfissional.innerHTML = "Salvar profissional";
+  } else {
+    profissionalSalva = await salvarProfissionalSupabase(profissional);
+
+    if (!profissionalSalva) return;
+
+    profissionais.push(profissionalSalva);
   }
-
-  profissionais.push(profissionalSalva);
 
   renderizarProfissionais();
   carregarSelectProfissionais();
@@ -621,7 +736,11 @@ async function salvarProfissional() {
   profissionalNome.value = "";
   profissionalTelefone.value = "";
 
-  alert("Profissional salva com sucesso!");
+  alert(
+  idProfissionalEditando
+    ? "Profissional atualizada com sucesso!"
+    : "Profissional cadastrada com sucesso!"
+);
 }
 
 function colocarDataDeHoje() {
@@ -1014,7 +1133,6 @@ async function salvarAgendamento() {
     empurrarAgendamentos(data, horario, duracaoTotal, idEditando);
   }
 
-  console.log("Profissional selecionada:", profissionalId);
 
   const agendamentoAtualizado = {
     id: idEditando || Date.now(),
@@ -1415,10 +1533,9 @@ async function carregarAgendamentosSupabase() {
     .order("horario_inicio", { ascending: true });
 
   if (error) {
-    console.error("Erro ao carregar agendamentos:", error);
-    alert("Erro ao carregar dados online.");
-    return;
-  }
+  tratarErroSupabase(error, "Erro ao carregar agendamentos.");
+  return;
+}
 
   agendamentos = data.map((item) => {
     return {
@@ -1466,12 +1583,23 @@ function renderizarProfissionais() {
     <span>${profissional.telefone || "-"}</span>
   </div>
 
-  <button
-    class="btn-excluir-profissional"
-    onclick="excluirProfissional(${profissional.id})"
-  >
-    🗑️
-  </button>
+  <div class="acoes">
+    <button
+      class="btn-small edit"
+      onclick="editarProfissional(${profissional.id})"
+      type="button"
+    >
+      ✏️ Editar
+    </button>
+
+    <button
+      class="btn-excluir-profissional"
+      onclick="excluirProfissional(${profissional.id})"
+      type="button"
+    >
+      🗑️
+    </button>
+  </div>
 `;
 
     listaProfissionais.appendChild(card);
@@ -1614,7 +1742,7 @@ function renderizarAgenda() {
 
     const nomeProfissional = profissionalDoAgendamento
       ? profissionalDoAgendamento.nome
-      : "Profissional não informada";
+      : "Não informada";
 
     const card = document.createElement("div");
     card.classList.add("agendamento");
@@ -1631,7 +1759,7 @@ function renderizarAgenda() {
         </span>
       </div>
 
-      <p><strong>Data:</strong> ${agendamento.data}</p>
+      <p><strong>Data:</strong> ${agendamento.data.split("-").reverse().join("/")}</p>
       <p><strong>Profissional:</strong> ${nomeProfissional}</p>
       <p><strong>Horário:</strong> ${agendamento.horarioInicio} às ${agendamento.horarioFim}</p>
       <p><strong>Procedimentos:</strong> ${procedimentosTexto}</p>
@@ -2280,7 +2408,6 @@ btnSalvarModal.addEventListener("click", async () => {
 
 document.addEventListener("click", async (event) => {
   if (event.target.id === "btn-logout") {
-    console.log("Clicou no botão sair");
 
     const { error } = await supabaseClient.auth.signOut();
 
