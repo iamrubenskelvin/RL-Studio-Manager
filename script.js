@@ -272,15 +272,17 @@ btnForgotPassword.addEventListener("click", async () => {
   alert("Enviamos um link de recuperação para seu e-mail.");
 });
 
-btnOrganizarProcedimentos.addEventListener("click", () => {
-  organizandoProcedimentos = !organizandoProcedimentos;
+if (btnOrganizarProcedimentos) {
+  btnOrganizarProcedimentos.addEventListener("click", () => {
+    organizandoProcedimentos = !organizandoProcedimentos;
 
-  btnOrganizarProcedimentos.textContent = organizandoProcedimentos
-    ? "Concluir"
-    : "Organizar";
+    btnOrganizarProcedimentos.textContent = organizandoProcedimentos
+      ? "Concluir"
+      : "Organizar";
 
-  carregarProcedimentos();
-});
+    carregarProcedimentos();
+  });
+}
 
 btnTogglePassword.addEventListener("click", () => {
   const icone = btnTogglePassword.querySelector("span");
@@ -450,9 +452,9 @@ async function salvarDespesaSupabase(despesa) {
         valor: despesa.valor,
         data: despesa.data,
         profissional_id:
-  despesa.profissionalId === "studio"
-    ? null
-    : Number(despesa.profissionalId),
+          despesa.profissionalId === "studio"
+            ? null
+            : Number(despesa.profissionalId),
       },
     ])
     .select()
@@ -560,15 +562,15 @@ async function carregarDespesasSupabase() {
   }
 
   despesas = data.map((item) => {
-  return {
-    id: item.id,
-    descricao: item.descricao,
-    categoria: item.categoria,
-    valor: Number(item.valor),
-    data: item.data,
-    profissionalId: item.profissional_id,
-  };
-});
+    return {
+      id: item.id,
+      descricao: item.descricao,
+      categoria: item.categoria,
+      valor: Number(item.valor),
+      data: item.data,
+      profissionalId: item.profissional_id,
+    };
+  });
 
   renderizarDespesas();
   atualizarResumoFinanceiro();
@@ -1975,18 +1977,18 @@ function atualizarResumoFinanceiro() {
   financeiroMesTexto.innerHTML = valorFinanceiro(totalMes);
 
   const despesasMes = despesas
-  .filter((despesa) => {
-    const dataDespesa = new Date(`${despesa.data}T00:00:00`);
+    .filter((despesa) => {
+      const dataDespesa = new Date(`${despesa.data}T00:00:00`);
 
-    const dataValida = dataDespesa >= inicioMes && dataDespesa <= hoje;
+      const dataValida = dataDespesa >= inicioMes && dataDespesa <= hoje;
 
-    const profissionalValida =
-      profissionalSelecionada === "todos" ||
-      Number(despesa.profissionalId) === Number(profissionalSelecionada);
+      const profissionalValida =
+        profissionalSelecionada === "todos" ||
+        Number(despesa.profissionalId) === Number(profissionalSelecionada);
 
-    return dataValida && profissionalValida;
-  })
-  .reduce((total, despesa) => total + despesa.valor, 0);
+      return dataValida && profissionalValida;
+    })
+    .reduce((total, despesa) => total + despesa.valor, 0);
 
   const lucroMes = totalMes - despesasMes;
 
@@ -2054,8 +2056,7 @@ function atualizarCards() {
   const totalPrevisto = agendamentosFiltrados
     .filter((agendamento) => {
       return (
-        agendamento.status === "Agendado" ||
-        agendamento.status === "Confirmado"
+        agendamento.status === "Agendado" || agendamento.status === "Confirmado"
       );
     })
     .reduce((total, agendamento) => {
@@ -2617,7 +2618,7 @@ async function carregarProcedimentos() {
 
           <button
             class="btn-small edit"
-            onclick="editarProcedimento(${procedimento.id})"
+            onclick="editarProcedimento(${procedimento.id}, '${procedimento.nome}', ${procedimento.valor}, ${procedimento.duracao})"
           >
             ✏️ Editar
           </button>
@@ -2747,12 +2748,12 @@ async function salvarDespesa() {
   }
 
   const despesa = {
-  descricao,
-  categoria,
-  valor,
-  data,
-  profissionalId,
-};
+    descricao,
+    categoria,
+    valor,
+    data,
+    profissionalId,
+  };
 
   const despesaSalva = await salvarDespesaSupabase(despesa);
 
@@ -2860,65 +2861,85 @@ async function gerarRelatorioPdf() {
 
   const dataInicio = document.getElementById("pdfDataInicio")?.value;
   const dataFim = document.getElementById("pdfDataFim")?.value;
+  const profissionalSelecionada =
+    filtroProfissionalFinanceiro?.value || "todos";
+
+  const nomeProfissionalPdf =
+    profissionalSelecionada === "todos"
+      ? "Todos"
+      : profissionais.find((profissional) => {
+          return profissional.id === Number(profissionalSelecionada);
+        })?.nome || "Profissional";
 
   const despesasFiltradas = despesas.filter((despesa) => {
-    if (!dataInicio && !dataFim) return true;
-
     if (dataInicio && despesa.data < dataInicio) return false;
     if (dataFim && despesa.data > dataFim) return false;
 
-    return true;
+    return (
+      profissionalSelecionada === "todos" ||
+      Number(despesa.profissionalId) === Number(profissionalSelecionada)
+    );
   });
-
-  const totalDespesasPeriodo = despesasFiltradas.reduce((total, despesa) => {
-    return total + Number(despesa.valor || 0);
-  }, 0);
 
   const agendamentosFiltrados = agendamentos.filter((agendamento) => {
     if (agendamento.status !== "Atendido") return false;
-
-    if (!dataInicio && !dataFim) return true;
-
     if (dataInicio && agendamento.data < dataInicio) return false;
     if (dataFim && agendamento.data > dataFim) return false;
 
-    return true;
+    return (
+      profissionalSelecionada === "todos" ||
+      Number(agendamento.profissionalId) === Number(profissionalSelecionada)
+    );
   });
 
   const totalReceitaPeriodo = agendamentosFiltrados.reduce(
-    (total, agendamento) => {
-      return total + Number(agendamento.valorTotal || 0);
-    },
+    (total, agendamento) => total + Number(agendamento.valorTotal || 0),
+    0,
+  );
+
+  const totalDespesasPeriodo = despesasFiltradas.reduce(
+    (total, despesa) => total + Number(despesa.valor || 0),
     0,
   );
 
   const lucroPeriodo = totalReceitaPeriodo - totalDespesasPeriodo;
+  const ticketMedioPdf =
+    agendamentosFiltrados.length > 0
+      ? totalReceitaPeriodo / agendamentosFiltrados.length
+      : 0;
+
+  const procedimentosContagem = {};
+
+  agendamentosFiltrados.forEach((agendamento) => {
+    agendamento.procedimentos.forEach((procedimento) => {
+      procedimentosContagem[procedimento.nome] =
+        (procedimentosContagem[procedimento.nome] || 0) + 1;
+    });
+  });
+
+  let procedimentoMaisRealizadoPdf = "Nenhum ainda";
+  let quantidadeProcedimentoPdf = 0;
+
+  Object.keys(procedimentosContagem).forEach((nome) => {
+    if (procedimentosContagem[nome] > quantidadeProcedimentoPdf) {
+      procedimentoMaisRealizadoPdf = nome;
+      quantidadeProcedimentoPdf = procedimentosContagem[nome];
+    }
+  });
 
   const dataGerada = new Date().toLocaleDateString("pt-BR");
 
-  const receita = dashboardReceita.textContent;
-  const lucro = dashboardLucro.textContent;
-  const atendimentos = totalAtendimentosFinanceiro.textContent;
-  const ticketMedio = ticketMedioTexto.textContent;
-  const procedimentoMaisRealizado = procedimentoMaisRealizadoTexto.textContent;
+  function formatarDataPdf(data) {
+    if (!data) return "";
+    return data.split("-").reverse().join("/");
+  }
 
-  const clientesRanking = {};
-
-  agendamentosFiltrados.forEach((agendamento) => {
-    if (!clientesRanking[agendamento.cliente]) {
-      clientesRanking[agendamento.cliente] = {
-        quantidade: 0,
-        total: 0,
-      };
-    }
-
-    clientesRanking[agendamento.cliente].quantidade++;
-    clientesRanking[agendamento.cliente].total += agendamento.valorTotal;
-  });
-
-  const top5ClientesPdf = Object.entries(clientesRanking)
-    .sort((a, b) => b[1].total - a[1].total)
-    .slice(0, 5);
+  const periodoTexto =
+    dataInicio || dataFim
+      ? `${formatarDataPdf(dataInicio) || "início"} até ${
+          formatarDataPdf(dataFim) || "hoje"
+        }`
+      : "Todos os registros";
 
   const rose = [183, 110, 121];
   const gold = [212, 175, 55];
@@ -2926,36 +2947,32 @@ async function gerarRelatorioPdf() {
   const gray = [120, 120, 120];
   const light = [250, 247, 248];
 
-  // FUNÇÕES
-  function tituloSecao(texto, y) {
-    doc.setTextColor(...rose);
-    doc.setFontSize(13);
-    doc.text(texto, 20, y);
-
-    doc.setDrawColor(...gold);
-    doc.line(20, y + 3, 190, y + 3);
-  }
-
-  function card(titulo, valor, x, y, cor) {
+  function cardIndicador(titulo, subtitulo, valor, x, y, cor) {
     doc.setFillColor(...light);
-    doc.roundedRect(x, y, 52, 34, 5, 5, "F");
+    doc.roundedRect(x, y, 52, 48, 6, 6, "F");
 
     doc.setTextColor(...gray);
-    doc.setFontSize(9);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
     doc.text(titulo, x + 5, y + 10);
 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(subtitulo, x + 5, y + 18);
+
     doc.setTextColor(...cor);
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text(valor, x + 5, y + 24);
+    doc.text(valor, x + 5, y + 36);
   }
 
-  // TOPO PREMIUM
+  // CABEÇALHO
   doc.setFillColor(...rose);
-  doc.rect(0, 0, 210, 42, "F");
+  doc.rect(0, 0, 210, 48, "F");
 
   doc.setDrawColor(...gold);
   doc.setLineWidth(0.6);
-  doc.line(20, 25, 90, 25);
+  doc.line(20, 28, 92, 28);
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -2963,148 +2980,96 @@ async function gerarRelatorioPdf() {
   doc.text("STUDIO MANAGER", 20, 18);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("RELATORIO FINANCEIRO PROFISSIONAL", 20, 32);
+  doc.setFontSize(11);
+  doc.text("Relatório Financeiro Executivo", 20, 36);
 
-  // Logo
   doc.setFillColor(255, 255, 255);
-  doc.circle(178, 21, 15, "F");
+  doc.circle(178, 24, 15, "F");
 
   doc.setDrawColor(...gold);
-  doc.setLineWidth(0.7);
-  doc.circle(178, 21, 16, "S");
+  doc.circle(178, 24, 16, "S");
 
-  doc.addImage(logoBase64, "PNG", 166, 9, 24, 24);
+  doc.addImage(logoBase64, "PNG", 166, 12, 24, 24);
 
-  // TÍTULO
+  // INFORMAÇÕES
   doc.setTextColor(...dark);
-  doc.setFontSize(18);
-  doc.text("Relatorio Financeiro", 20, 58);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.text("Resumo financeiro", 20, 65);
 
-  doc.setTextColor(...gray);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(`Gerado em: ${dataGerada}`, 20, 66);
-
-  function formatarDataPdf(data) {
-    if (!data) return "";
-
-    return data.split("-").reverse().join("/");
-  }
-
-  const periodoTexto =
-    dataInicio || dataFim
-      ? `Período: ${formatarDataPdf(dataInicio) || "início"} até ${
-          formatarDataPdf(dataFim) || "hoje"
-        }`
-      : "Período: todos os registros";
-
-  doc.text(periodoTexto, 20, 72);
+  doc.setTextColor(...gray);
+  doc.text(`Gerado em: ${dataGerada}`, 20, 73);
+  doc.text(`Profissional: ${nomeProfissionalPdf}`, 20, 81);
+  doc.text(`Período: ${periodoTexto}`, 20, 89);
 
   // CARDS
-  card("Receita", formatarMoeda(totalReceitaPeriodo), 20, 76, [46, 173, 107]);
-  card("Despesas", formatarMoeda(totalDespesasPeriodo), 79, 76, [217, 74, 74]);
-  card("Lucro", formatarMoeda(lucroPeriodo), 138, 76, rose);
-
-  // RESUMO
-  tituloSecao("Resumo do periodo", 126);
-
-  doc.setTextColor(...dark);
-  doc.setFontSize(11);
-  doc.text(`Atendimentos finalizados: ${atendimentos}`, 20, 140);
-  doc.text(`Ticket medio: ${ticketMedio}`, 20, 150);
-  doc.text(
-    `Procedimento mais realizado: ${procedimentoMaisRealizado}`,
+  cardIndicador(
+    "RECEITA TOTAL",
+    "Valor recebido no período",
+    formatarMoeda(totalReceitaPeriodo),
     20,
-    160,
+    105,
+    [46, 173, 107],
   );
 
-  // TOP CLIENTES
-  tituloSecao("Top 5 Clientes", 175);
+  cardIndicador(
+    "DESPESAS",
+    "Gastos registrados",
+    formatarMoeda(totalDespesasPeriodo),
+    79,
+    105,
+    [217, 74, 74],
+  );
 
-  let yClientes = 188;
-  if (top5ClientesPdf.length === 0) {
-    doc.setTextColor(...gray);
-    doc.setFontSize(10);
-    doc.text("Nenhum cliente encontrado no período.", 20, yClientes);
-  } else {
-    top5ClientesPdf.forEach(([nome, dados], index) => {
-      doc.setFillColor(248, 248, 248);
-      doc.roundedRect(20, yClientes - 6, 170, 12, 2, 2, "F");
+  cardIndicador(
+    "LUCRO LÍQUIDO",
+    "Receita menos despesas",
+    formatarMoeda(lucroPeriodo),
+    138,
+    105,
+    rose,
+  );
 
-      doc.setTextColor(...dark);
-      doc.setFontSize(10);
+  // CAIXA DE RESUMO
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(20, 172, 170, 54, 5, 5, "FD");
 
-      doc.text(`${index + 1}. ${nome}`, 24, yClientes);
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Indicadores do período", 28, 187);
 
-      doc.setTextColor(...gray);
-      doc.text(`${dados.quantidade} atendimento(s)`, 100, yClientes);
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
 
-      doc.setTextColor(...rose);
-      doc.text(formatarMoeda(dados.total), 155, yClientes);
+  doc.text(`Atendimentos realizados: ${agendamentosFiltrados.length}`, 28, 200);
+  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 211);
+  doc.text(
+    `Procedimento mais realizado: ${procedimentoMaisRealizadoPdf}`,
+    28,
+    222,
+  );
 
-      yClientes += 14;
-    });
-  }
+  doc.text(
+    `Quantidade do procedimento: ${quantidadeProcedimentoPdf}`,
+    110,
+    200,
+  );
 
-  // DESPESAS
-  tituloSecao("Despesas cadastradas", yClientes + 10);
-
-  if (despesasFiltradas.length === 0) {
-    doc.setTextColor(...gray);
-    doc.setFontSize(10);
-    doc.text("Nenhuma despesa cadastrada.", 20, 194);
-  } else {
-    let y = yClientes + 24;
-
-    // Cabeçalho da tabela
-    doc.setFillColor(...rose);
-    doc.roundedRect(20, y - 8, 170, 12, 2, 2, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-
-    doc.text("DESCRIÇÃO", 24, y);
-    doc.text("CATEGORIA", 95, y);
-    doc.text("VALOR", 155, y);
-
-    y += 14;
-
-    despesasFiltradas.slice(0, 8).forEach((despesa, index) => {
-      // Linhas alternadas
-      if (index % 2 === 0) {
-        doc.setFillColor(248, 248, 248);
-      } else {
-        doc.setFillColor(255, 255, 255);
-      }
-
-      doc.rect(20, y - 8, 170, 12, "F");
-
-      doc.setFont("helvetica", "normal");
-
-      doc.setTextColor(...dark);
-      doc.setFontSize(9);
-
-      doc.text(String(despesa.descricao || "").substring(0, 35), 24, y);
-
-      doc.text(String(despesa.categoria || "").substring(0, 20), 95, y);
-
-      doc.setTextColor(217, 74, 74);
-
-      doc.text(formatarMoeda(Number(despesa.valor || 0)), 155, y);
-
-      y += 12;
-    });
-  }
+  doc.text(`Lucro do período: ${formatarMoeda(lucroPeriodo)}`, 110, 211);
 
   // RODAPÉ
   doc.setDrawColor(...gold);
-  doc.line(20, 276, 190, 276);
+  doc.line(20, 250, 190, 250);
 
   doc.setTextColor(...gray);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Relatorio gerado automaticamente pelo Studio Manager", 20, 286);
+  doc.text("Studio Manager • Relatório gerado automaticamente", 20, 262);
 
   doc.save("relatorio-financeiro-studio-manager.pdf");
 }
