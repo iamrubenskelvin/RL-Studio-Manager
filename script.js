@@ -205,22 +205,19 @@ btnLogin.addEventListener("click", async () => {
   btnLogin.innerHTML = "Entrando...";
   btnLogin.disabled = true;
 
- const { data, error } = await supabaseClient.auth.signInWithPassword({
-  email,
-  password,
-});
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-if (error) {
-  btnLogin.innerHTML = "Entrar";
-  btnLogin.disabled = false;
+  if (error) {
+    btnLogin.innerHTML = "Entrar";
+    btnLogin.disabled = false;
 
-  tratarErroSupabase(
-    error,
-    "E-mail ou senha incorretos."
-  );
+    tratarErroSupabase(error, "E-mail ou senha incorretos.");
 
-  return;
-}
+    return;
+  }
 
   usuarioLogado = data.user;
 
@@ -338,7 +335,10 @@ function formatarMoeda(valor) {
   });
 }
 
-function tratarErroSupabase(error, mensagemPadrao = "Ocorreu um erro. Tente novamente.") {
+function tratarErroSupabase(
+  error,
+  mensagemPadrao = "Ocorreu um erro. Tente novamente.",
+) {
   console.error(error);
 
   const mensagem = error?.message || "";
@@ -356,7 +356,10 @@ function tratarErroSupabase(error, mensagemPadrao = "Ocorreu um erro. Tente nova
     return;
   }
 
-  if (mensagem.includes("rate limit") || mensagem.includes("Too Many Requests")) {
+  if (
+    mensagem.includes("rate limit") ||
+    mensagem.includes("Too Many Requests")
+  ) {
     alert(
       "Muitas tentativas realizadas.\n\n" +
         "Aguarde alguns minutos e tente novamente.",
@@ -737,10 +740,10 @@ async function salvarProfissional() {
   profissionalTelefone.value = "";
 
   alert(
-  idProfissionalEditando
-    ? "Profissional atualizada com sucesso!"
-    : "Profissional cadastrada com sucesso!"
-);
+    idProfissionalEditando
+      ? "Profissional atualizada com sucesso!"
+      : "Profissional cadastrada com sucesso!",
+  );
 }
 
 function colocarDataDeHoje() {
@@ -881,10 +884,10 @@ function renderizarProcedimentos() {
     item.classList.add("procedimento-item");
 
     item.innerHTML = `
-      <input type="checkbox" value="${index}" />
-      <strong>${procedimento.nome}</strong>
-      <span>${formatarMoeda(procedimento.valor)} • ${procedimento.duracao} min</span>
-    `;
+  <input type="checkbox" value="${index}" />
+  <strong>${procedimento.nome}</strong>
+  <span>${formatarMoeda(procedimento.valor)} • ${formatarTempo(procedimento.duracao)}</span>
+`;
 
     const checkbox = item.querySelector("input");
 
@@ -920,14 +923,10 @@ function formatarTempo(minutos) {
   const minutosRestantes = minutos % 60;
 
   if (minutosRestantes === 0) {
-    if (horas === 1) {
-      return `1 hora`;
-    }
-
-    return `${horas} horas`;
+    return `${horas} hora${horas > 1 ? "s" : ""}`;
   }
 
-  return `${horas}h ${minutosRestantes}min`;
+  return `${horas} hora${horas > 1 ? "s" : ""} e ${minutosRestantes} min`;
 }
 
 function atualizarResumoProcedimentos() {
@@ -1132,7 +1131,6 @@ async function salvarAgendamento() {
 
     empurrarAgendamentos(data, horario, duracaoTotal, idEditando);
   }
-
 
   const agendamentoAtualizado = {
     id: idEditando || Date.now(),
@@ -1533,9 +1531,9 @@ async function carregarAgendamentosSupabase() {
     .order("horario_inicio", { ascending: true });
 
   if (error) {
-  tratarErroSupabase(error, "Erro ao carregar agendamentos.");
-  return;
-}
+    tratarErroSupabase(error, "Erro ao carregar agendamentos.");
+    return;
+  }
 
   agendamentos = data.map((item) => {
     return {
@@ -2408,7 +2406,6 @@ btnSalvarModal.addEventListener("click", async () => {
 
 document.addEventListener("click", async (event) => {
   if (event.target.id === "btn-logout") {
-
     const { error } = await supabaseClient.auth.signOut();
 
     if (error) {
