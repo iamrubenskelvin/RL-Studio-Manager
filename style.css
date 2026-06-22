@@ -1821,3 +1821,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   gap: 6px;
 }
+
+#duracao-formatada {
+  display: block;
+  margin-top: 8px;
+  color: #b76e79;
+  font-weight: 600;
+  font-size: 14px;
+}

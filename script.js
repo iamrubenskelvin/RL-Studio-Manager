@@ -124,6 +124,17 @@ if (inputDataInicioPdf && inputDataFimPdf) {
 const procedimentoNome = document.querySelector("#procedimento-nome");
 const procedimentoValor = document.querySelector("#procedimento-valor");
 const procedimentoDuracao = document.querySelector("#procedimento-duracao");
+const duracaoFormatada = document.querySelector("#duracao-formatada");
+procedimentoDuracao.addEventListener("input", () => {
+  const minutos = Number(procedimentoDuracao.value);
+
+  if (!minutos) {
+    duracaoFormatada.innerHTML = "";
+    return;
+  }
+
+  duracaoFormatada.innerHTML = formatarTempo(minutos);
+});
 
 const listaProcedimentos = document.querySelector("#lista-procedimentos");
 const btnOrganizarProcedimentos = document.querySelector(
