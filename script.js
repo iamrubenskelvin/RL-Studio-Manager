@@ -2991,6 +2991,7 @@ function carregarImagemBase64(caminho) {
 async function gerarRelatorioPdf() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  let totalPaginas = 1;
 
   const logoBase64 = await carregarImagemBase64("./asset/logo-app.png");
 
@@ -3061,6 +3062,26 @@ async function gerarRelatorioPdf() {
       quantidadeProcedimentoPdf = procedimentosContagem[nome];
     }
   });
+
+  const clientesRankingPdf = {};
+
+  agendamentosFiltrados.forEach((agendamento) => {
+    if (!clientesRankingPdf[agendamento.cliente]) {
+      clientesRankingPdf[agendamento.cliente] = {
+        quantidade: 0,
+        total: 0,
+      };
+    }
+
+    clientesRankingPdf[agendamento.cliente].quantidade++;
+    clientesRankingPdf[agendamento.cliente].total += Number(
+      agendamento.valorTotal || 0,
+    );
+  });
+
+  const topClientesPdf = Object.entries(clientesRankingPdf)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5);
 
   const dataGerada = new Date().toLocaleDateString("pt-BR");
 
@@ -3167,36 +3188,367 @@ async function gerarRelatorioPdf() {
     rose,
   );
 
-  // CAIXA DE RESUMO
+  // INDICADORES DO PERÍODO
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(...gold);
-  doc.roundedRect(20, 172, 170, 60, 5, 5, "FD");
+  doc.roundedRect(20, 166, 82, 68, 5, 5, "FD");
 
   doc.setTextColor(...rose);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("Indicadores do período", 28, 187);
+  doc.setFontSize(12);
+  doc.text("Indicadores", 28, 181);
 
   doc.setTextColor(...dark);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
 
-  doc.text(`Atendimentos realizados: ${agendamentosFiltrados.length}`, 28, 200);
+  doc.text(`Atendimentos: ${agendamentosFiltrados.length}`, 28, 192);
 
-  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 212);
+  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 202);
 
-  doc.text(`Procedimento campeão: ${procedimentoMaisRealizadoPdf}`, 28, 224);
+  const procedimentoTextoPdf =
+    procedimentoMaisRealizadoPdf.length > 24
+      ? procedimentoMaisRealizadoPdf.substring(0, 24) + "..."
+      : procedimentoMaisRealizadoPdf;
 
-  doc.text(`Lucro do período: ${formatarMoeda(lucroPeriodo)}`, 110, 200);
+  doc.text("Procedimento Destaque", 28, 214);
+  doc.text(`${procedimentoTextoPdf} (${quantidadeProcedimentoPdf}x)`, 28, 224);
+
+  // TOP CLIENTES
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(108, 166, 82, 60, 5, 5, "FD");
+
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Top clientes", 116, 181);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...dark);
+
+  if (topClientesPdf.length === 0) {
+    doc.text("Nenhum cliente no período.", 116, 197);
+  } else {
+    topClientesPdf.forEach(([nome, dados], index) => {
+      const nomeClientePdf =
+        nome.length > 18 ? nome.substring(0, 18) + "..." : nome;
+
+      const linhaY = 196 + index * 8;
+
+      const medalha =
+        index === 0 ? "#1" : index === 1 ? "#2" : index === 2 ? "#3" : "•";
+
+      doc.text(`${medalha} ${nomeClientePdf}`, 116, linhaY);
+      doc.text(`${dados.quantidade}x`, 158, linhaY);
+      doc.text(formatarMoeda(dados.total), 169, linhaY);
+    });
+  }
+
+  // RESUMO EXECUTIVO (Alinhamento horizontal calibrado com o grid superior)
+  doc.setFillColor(...light);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(20, 232, 170, 42, 5, 5, "FD"); 
+
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Resumo Executivo", 28, 243); 
+
+  const melhorCliente =
+    topClientesPdf.length > 0
+      ? topClientesPdf[0][0].substring(0, 20)
+      : "Nenhum";
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+
+  // Garantindo o início em X = 28 para simetria perfeita com o bloco de "Indicadores" acima
+  doc.text(`Receita Total: ${formatarMoeda(totalReceitaPeriodo)}`, 28, 251);
+  doc.text(`Despesas Totais: ${formatarMoeda(totalDespesasPeriodo)}`, 28, 257);
+  doc.text(`Procedimento Destaque: ${procedimentoTextoPdf}`, 28, 263);
+  doc.text(`Melhor Cliente: ${melhorCliente}`, 28, 269);
+
+  // Coluna 2 - Lucro Líquido (Ajustado X para 116 para alinhar com a coluna do bloco "Top clientes" logo acima)
+  doc.setTextColor(46, 173, 107);
+  doc.setFont("helvetica", "bold"); 
+  doc.text(`Lucro Líquido: ${formatarMoeda(lucroPeriodo)}`, 116, 251); 
+  doc.setFont("helvetica", "normal");
 
   // RODAPÉ
   doc.setDrawColor(...gold);
-  doc.line(20, 250, 190, 250);
+  doc.line(20, 280, 190, 280);
 
   doc.setTextColor(...gray);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("RL Studio Manager • Relatório Financeiro Executivo", 20, 262);
+  doc.text("RL Studio Manager • Relatório Financeiro Executivo", 20, 288);
+
+  // PÁGINA 2 - HISTÓRICO FINANCEIRO
+  doc.addPage();
+
+  doc.setFillColor(...rose);
+  doc.rect(0, 0, 210, 32, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("Histórico Financeiro", 20, 20);
+
+  doc.setTextColor(...gray);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`Período: ${periodoTexto}`, 20, 44);
+  doc.text(`Profissional: ${nomeProfissionalPdf}`, 20, 51);
+
+  let y = 66;
+
+  doc.setFillColor(...light);
+  doc.roundedRect(20, y - 8, 170, 10, 3, 3, "F");
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("Data", 24, y);
+  doc.text("Cliente", 48, y);
+  doc.text("Procedimento", 94, y);
+  doc.text("Valor", 166, y);
+
+  y += 10;
+
+  doc.setFont("helvetica", "normal");
+
+  if (agendamentosFiltrados.length === 0) {
+    doc.setTextColor(...gray);
+    doc.text("Nenhum atendimento encontrado no período.", 24, y + 8);
+  } else {
+    agendamentosFiltrados
+      .sort((a, b) => {
+        return (
+          new Date(`${a.data}T${a.horarioInicio}`) -
+          new Date(`${b.data}T${b.horarioInicio}`)
+        );
+      })
+      .forEach((agendamento) => {
+        if (y > 265) {
+          doc.addPage();
+
+          doc.setFillColor(...rose);
+          doc.rect(0, 0, 210, 26, "F");
+
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          doc.text("Histórico Financeiro", 20, 17);
+
+          y = 42;
+
+          doc.setFillColor(...light);
+          doc.roundedRect(20, y - 8, 170, 10, 3, 3, "F");
+
+          doc.setTextColor(...dark);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.text("Data", 24, y);
+          doc.text("Cliente", 48, y);
+          doc.text("Procedimento", 94, y);
+          doc.text("Valor", 166, y);
+
+          y += 10;
+          doc.setFont("helvetica", "normal");
+        }
+
+        const dataAtendimento = agendamento.data.split("-").reverse().join("/");
+
+        const clientePdf =
+          agendamento.cliente.length > 22
+            ? agendamento.cliente.substring(0, 22) + "..."
+            : agendamento.cliente;
+
+        const procedimentosPdf = agendamento.procedimentos
+          .map((procedimento) => procedimento.nome)
+          .join(" + ");
+
+        const procedimentosTextoPdf =
+          procedimentosPdf.length > 32
+            ? procedimentosPdf.substring(0, 32) + "..."
+            : procedimentosPdf;
+
+        doc.setTextColor(...dark);
+        doc.setFontSize(8);
+
+        doc.text(dataAtendimento, 24, y);
+        doc.text(clientePdf, 48, y);
+        doc.text(procedimentosTextoPdf, 94, y);
+        doc.setTextColor(46, 173, 107);
+
+        doc.text(formatarMoeda(agendamento.valorTotal), 166, y);
+
+        doc.setTextColor(...dark);
+
+        doc.setDrawColor(230, 230, 230);
+        doc.line(20, y + 4, 190, y + 4);
+
+        y += 10;
+      });
+  }
+
+  // RESUMO FINAL DA PÁGINA 2 (Validação de quebra de página aplicada)
+  if (y > 250) {
+    doc.addPage();
+    doc.setFillColor(...rose);
+    doc.rect(0, 0, 210, 26, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Histórico Financeiro - Resumo", 20, 17);
+    y = 42;
+  } else {
+    y += 10;
+  }
+
+  doc.setDrawColor(...gold);
+  doc.line(20, y, 190, y);
+
+  y += 12;
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Total de atendimentos: ${agendamentosFiltrados.length}`, 24, y);
+
+  doc.setTextColor(46, 173, 107);
+  doc.setFontSize(12);
+  doc.text(`Receita total: ${formatarMoeda(totalReceitaPeriodo)}`, 24, y + 12);
+
+  // RODAPÉ FIXO PÁGINA 2
+  doc.setDrawColor(...gold);
+  doc.line(20, 280, 190, 280);
+  doc.setTextColor(...gray);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("RL Studio Manager • Histórico Financeiro", 20, 288);
+
+  // PÁGINA 3 - INTELIGÊNCIA DE NEGÓCIO
+  doc.addPage();
+
+  const topProcedimentosPdf = Object.entries(procedimentosContagem)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  doc.setFillColor(...rose);
+  doc.rect(0, 0, 210, 32, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("Inteligência de Negócio", 20, 20);
+
+  doc.setTextColor(...gray);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(`Período: ${periodoTexto}`, 20, 44);
+  doc.text(`Profissional: ${nomeProfissionalPdf}`, 20, 51);
+
+  // TOP PROCEDIMENTOS
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(20, 65, 170, 70, 5, 5, "FD");
+
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Top Procedimentos", 28, 80);
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+
+  if (topProcedimentosPdf.length === 0) {
+    doc.text("Nenhum procedimento encontrado no período.", 28, 96);
+  } else {
+    topProcedimentosPdf.forEach(([nome, qtd], index) => {
+      const nomeProcedimento =
+        nome.length > 45 ? nome.substring(0, 45) + "..." : nome;
+
+      doc.text(`${index + 1}. ${nomeProcedimento}`, 28, 96 + index * 9);
+      doc.text(`${qtd} atendimento(s)`, 150, 96 + index * 9);
+    });
+  }
+
+  // TOP CLIENTES
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(20, 150, 170, 70, 5, 5, "FD");
+
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text("Top Clientes", 28, 165);
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+
+  if (topClientesPdf.length === 0) {
+    doc.text("Nenhum cliente encontrado no período.", 28, 181);
+  } else {
+    topClientesPdf.forEach(([nome, dados], index) => {
+      const nomeCliente =
+        nome.length > 38 ? nome.substring(0, 38) + "..." : nome;
+
+      doc.text(`${index + 1}. ${nomeCliente}`, 28, 181 + index * 9);
+      doc.text(`${dados.quantidade}x`, 130, 181 + index * 9);
+
+      doc.setTextColor(46, 173, 107);
+      doc.text(formatarMoeda(dados.total), 150, 181 + index * 9);
+      doc.setTextColor(...dark);
+    });
+  }
+
+  // INDICADORES ESTRATÉGICOS
+  doc.setFillColor(...light);
+  doc.setDrawColor(...gold);
+  doc.roundedRect(20, 235, 170, 32, 5, 5, "FD");
+
+  doc.setTextColor(...rose);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Indicadores Estratégicos", 28, 248);
+
+  doc.setTextColor(...dark);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+
+  doc.text(`Ticket médio: ${formatarMoeda(ticketMedioPdf)}`, 28, 256);
+
+  doc.text(`Procedimento campeão: ${procedimentoTextoPdf}`, 28, 263);
+
+  doc.text(`Lucro líquido: ${formatarMoeda(lucroPeriodo)}`, 95, 256);
+
+  doc.text(`Atendimentos: ${agendamentosFiltrados.length}`, 95, 263);
+
+  doc.setDrawColor(...gold);
+  doc.line(20, 280, 190, 280);
+
+  doc.setTextColor(...gray);
+  doc.setFontSize(9);
+  doc.text("RL Studio Manager • Inteligência de Negócio", 20, 288);
+
+  totalPaginas = doc.getNumberOfPages();
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    doc.setPage(i);
+
+    doc.setTextColor(...gray);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+
+    // Alinhamento perfeito à direita baseado no limite da margem do documento (190mm)
+    doc.text(`Página ${i} de ${totalPaginas}`, 190, 288, { align: "right" });
+  }
 
   doc.save("relatorio-financeiro-studio-manager.pdf");
 }
